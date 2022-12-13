@@ -19,6 +19,10 @@ class MainScreen extends StatefulWidget {
 
 String namas = "";
 String ids = "";
+List<Map>? listnote = [
+  {"": ""}
+];
+bool notesstatus = false;
 
 bool leadstatus = false;
 
@@ -48,6 +52,22 @@ class _MainScreenState extends State<MainScreen> {
       if (parsedat["leader_student"].toString() != "[]") {
         leadstatus = true;
       }
+      DataQueryBuilder searchnotes = DataQueryBuilder()
+        ..whereClause = "ownerId = '$currentUserObjectId'"
+        ..related = ["start_alkitab", "end_alkitab"]
+        ..relationsDepth = 1;
+
+      // ignore: unused_local_variable
+      Future<List<Map?>?> inititem = Backendless.data
+          .of('Catatan_Sate')
+          .find(searchnotes)
+          .then((foundnotes) {
+        listnote!.clear();
+        listnote = foundnotes?.cast<Map>();
+        notesstatus = true;
+        print(listnote.toString());
+        setState(() {});
+      });
       setState(() {});
     });
   }
@@ -68,6 +88,8 @@ class _MainScreenState extends State<MainScreen> {
       ContentMain(
         name: namas,
         id: ids,
+        notes: listnote,
+        statusnotesload: notesstatus,
       ),
       AlarmScreen(),
       null,
@@ -163,10 +185,14 @@ class _SwitchExampleState extends State<SwitchExample> {
 class ContentMain extends StatefulWidget {
   final String name;
   final String id;
+  final List<Map>? notes;
+  final bool statusnotesload;
   const ContentMain({
     Key? key,
     required this.id,
     required this.name,
+    required this.notes,
+    required this.statusnotesload,
   }) : super(key: key);
 
   @override
@@ -194,14 +220,22 @@ class _ContentMainState extends State<ContentMain> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    child: Text(
-                      'Good Day, ' + widget.name + '!',
-                      style: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: widget.name == ""
+                        ? Center(
+                            child: SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : Text(
+                            'Good Day, ' + widget.name + '!',
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 28,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
                   Container(
                     //lang switcher
@@ -261,22 +295,7 @@ class _ContentMainState extends State<ContentMain> {
                         ),
                         borderRadius: BorderRadius.all(Radius.circular(7))),
                     height: 425,
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: 7,
-                      itemBuilder: (context, index) {
-                        return Card(
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.description,
-                            ),
-                            title: Text('2 mey 2020'),
-                            subtitle: Text('kejadian 1:1'),
-                            onTap: () {},
-                          ),
-                        );
-                      },
-                    ),
+                    child: shownotes(),
                   ),
                 ],
               ),
@@ -284,7 +303,6 @@ class _ContentMainState extends State<ContentMain> {
             Container(
               //box for 2 box
               height: 140,
-              // color: Colors.red,
               margin: EdgeInsets.only(top: 15, left: 5, right: 5),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -292,9 +310,6 @@ class _ContentMainState extends State<ContentMain> {
                   Container(
                     height: 140,
                     width: 180,
-                    // decoration: BoxDecoration(
-                    //     border: Border.all(),
-                    //     borderRadius: BorderRadius.all(Radius.circular(20))),
                     child: IconButton(
                       padding: EdgeInsets.all(0),
                       onPressed: () {},
@@ -307,9 +322,6 @@ class _ContentMainState extends State<ContentMain> {
                   Container(
                     height: 140,
                     width: 180,
-                    // decoration: BoxDecoration(
-                    //     border: Border.all(),
-                    //     borderRadius: BorderRadius.all(Radius.circular(20))),
                     child: IconButton(
                       padding: EdgeInsets.all(0),
                       onPressed: () {},
@@ -326,5 +338,47 @@ class _ContentMainState extends State<ContentMain> {
         ),
       ),
     );
+  }
+
+  shownotes() {
+    if (widget.statusnotesload == false) {
+      return Center(
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: CircularProgressIndicator(),
+        ),
+      );
+    } else {
+      if (widget.notes!.length == 0) {
+        return Flex(direction: Axis.horizontal, children: [
+          Expanded(
+              child: Container(
+            child: Text(
+              "You have no notes yet. Let's start your Devotion Journey today!",
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+          )),
+        ]);
+      } else {
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          itemCount: widget.notes!.length,
+          itemBuilder: (context, index) {
+            return Card(
+              child: ListTile(
+                leading: Icon(
+                  Icons.description,
+                ),
+                title: widget.notes![index]['judul_catatan'],
+                subtitle: Text('kejadian 1:1'),
+                onTap: () {},
+              ),
+            );
+          },
+        );
+      }
+    }
   }
 }

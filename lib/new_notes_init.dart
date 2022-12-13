@@ -1,5 +1,10 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'notes_alkitab.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class NewNotesinitPage extends StatefulWidget {
   const NewNotesinitPage({Key? key}) : super(key: key);
@@ -9,10 +14,17 @@ class NewNotesinitPage extends StatefulWidget {
 }
 
 List<Map>? itemers = [
-  {"": ""}
+  {"judul_genre": ""}
 ];
+List<Map>? kitabs = [
+  {"kitab_singkat": ""}
+];
+String formattedDate = "";
+
+enum Readingmode { sabda, biblestudytools, gms, custom }
 
 class _NewNotesinitPageState extends State<NewNotesinitPage> {
+  Readingmode? _reading = Readingmode.custom;
   bool recomendationcheck = false;
 
   String? initdropdownvalue;
@@ -23,29 +35,34 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
   String? init_end_kitab;
   String? init_end_pasal;
   String? init_end_ayat;
-  
-
-  Future<List<Map?>?> inititem =
-      Backendless.data.of('Rekomendasi_Genre').find().then((value) {
-    itemers!.clear();
-    itemers = value?.cast<Map>();
-  });
 
   initState() {
     super.initState();
     init();
+    var now = new DateTime.now();
+    var formatter = new DateFormat('dd-MM-yy');
+    formattedDate = formatter.format(now);
   }
 
-  void init() async {}
+  void init() async {
+    Future<List<Map?>?> inititem =
+        Backendless.data.of('Rekomendasi_Genre').find().then((value) {
+      itemers!.clear();
+      itemers = value?.cast<Map>();
+    });
+    DataQueryBuilder querry = DataQueryBuilder()
+      ..sortBy = ["id_kitab"]
+      ..pageSize = 66;
+    Future<List<Map?>?> initkitab =
+        Backendless.data.of('Alkitab_kitab').find(querry).then((value) {
+      kitabs!.clear();
+      kitabs = value?.cast<Map>();
+      print("This is from new notes" + kitabs.toString());
+    });
 
-  var start_Kitab = [
-    //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
-    'Kej',
-    'Kel',
-    'Ima',
-    'Bil',
-    'Ula',
-  ];
+    setState(() {});
+  }
+
   var start_pasal = [
     //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
     '1',
@@ -63,14 +80,6 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     '5',
   ];
 
-  var end_kitab = [
-    //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
-    'Kej',
-    'Kel',
-    'Ima',
-    'Bil',
-    'Ula',
-  ];
   var end_pasal = [
     //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
     '1',
@@ -92,21 +101,37 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
+    final Future<String> _calculation = Future<String>.delayed(
+      const Duration(seconds: 3),
+      () => 'Data Loaded',
+    );
+    return Scaffold(
         appBar: AppBar(
           title: Text('Add New Notes'),
           leading: BackButton(
             onPressed: () => Navigator.pop(context),
           ),
-          actions: [],
+          actions: [
+            Center(
+              child: Text(formattedDate),
+            ),
+            IconButton(
+                onPressed: (() {}), icon: Icon(Icons.calendar_month_outlined)),
+            IconButton(
+                onPressed: (() {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if(init_end_ayat=);
+                  });
+                }),
+                icon: Icon(Icons.chevron_right))
+          ],
         ),
-        body: Padding(
-            padding: const EdgeInsets.all(0),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: Column(
-                children: [
+        body: FutureBuilder<String>(
+            future: _calculation,
+            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+              List<Widget> children;
+              if (snapshot.hasData) {
+                children = <Widget>[
                   CheckboxListTile(
                     contentPadding: EdgeInsets.all(0),
                     visualDensity: VisualDensity.compact,
@@ -115,152 +140,241 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (newvalue) {
                       recomendationcheck = newvalue!;
-                      initdropdownvalue = itemers![0]["judul_genre"];
+                      if (newvalue = true) {
+                        initdropdownvalue = itemers![0]["judul_genre"];
+                      } else {
+                        initdropdownvalue = null;
+                      }
                       setState(() {});
                     },
                   ),
-                  Container(
-                    height: 470 + 36,
-                    padding: EdgeInsets.only(
-                      left: 10,
-                      right: 10,
-                      bottom: 20,
-                      top: 0,
-                    ),
-                    margin: EdgeInsets.only(bottom: 0),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Color.fromARGB(255, 217, 185, 165),
-                        width: 0.7,
+                  Stack(alignment: AlignmentDirectional.center, children: [
+                    Container(
+                      height: 470 + 36,
+                      padding: EdgeInsets.only(
+                        left: 10,
+                        right: 10,
+                        bottom: 20,
+                        top: 0,
                       ),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Text("Genre : ",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontFamily: 'Roboto',
-                                )),
-                            Container(width: 15),
-                            DropdownButton(
-                                value: initdropdownvalue,
-                                hint: Text(""),
-                                icon: const Icon(Icons.keyboard_arrow_down),
-                                items: itemers!.map((Map items) {
-                                  return DropdownMenuItem(
-                                    value: items["judul_genre"],
-                                    child: Text(items["judul_genre"]),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    initdropdownvalue = value.toString();
-                                  });
-                                }),
-                          ],
+                      margin: EdgeInsets.only(bottom: 0),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Color.fromARGB(255, 217, 185, 165),
+                          width: 0.7,
                         ),
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.all(0),
-                          visualDensity: VisualDensity.compact,
-                          title: const Text("Devotions"),
-                          value: false,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          onChanged: (newvalue) {},
-                        ),
-                        Container(
-                          margin: EdgeInsets.all(0),
-                          //the fuscia box
-                          height: 160,
-                          decoration: BoxDecoration(
-                              color: Color.fromARGB(255, 217, 185, 165),
-                              border: Border.all(
-                                  color: Color.fromARGB(255, 217, 185, 165)),
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(10)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color.fromARGB(97, 0, 0, 0),
-                                  spreadRadius: 0.5,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 5),
-                                )
-                              ]),
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 5,
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
-                            itemBuilder: (context, index) => Card(
-                                child: Center(
-                              child: Text("Placeholder"),
-                            )),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Text("Genre : ",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontFamily: 'Roboto',
+                                  )),
+                              Container(width: 15),
+                              DropdownButton(
+                                  value: initdropdownvalue,
+                                  hint: Text(""),
+                                  icon: const Icon(Icons.keyboard_arrow_down),
+                                  items: itemers!.map((Map items) {
+                                    return DropdownMenuItem(
+                                      value: items["judul_genre"],
+                                      child: Text(items["judul_genre"]),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      initdropdownvalue = value.toString();
+                                    });
+                                  }),
+                            ],
                           ),
-                        ),
-                        SizedBox(height: 20),
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.all(0),
-                          visualDensity: VisualDensity.compact,
-                          title: const Text("Songs"),
-                          value: false,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          onChanged: (newvalue) {},
-                        ),
-                        Container(
-                          //the tosca box
-                          height: 160,
-                          decoration: BoxDecoration(
-                              color: Color(0xffc1ffba),
-                              border: Border.all(color: Color(0xffc1ffba)),
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(10)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color.fromARGB(97, 0, 0, 0),
-                                  spreadRadius: 0.5,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 5),
-                                )
-                              ]),
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 5,
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
-                            itemBuilder: (context, index) => Card(
-                                child: Center(
-                              child: Text("Placeholder"),
-                            )),
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.all(0),
+                            visualDensity: VisualDensity.compact,
+                            title: const Text("Devotions"),
+                            value: false,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (newvalue) {},
                           ),
-                        ),
-                      ],
+                          Container(
+                            margin: EdgeInsets.all(0),
+                            //the fuscia box
+                            height: 160,
+                            decoration: BoxDecoration(
+                                color: Color.fromARGB(255, 217, 185, 165),
+                                border: Border.all(
+                                    color: Color.fromARGB(255, 217, 185, 165)),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(10)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color.fromARGB(97, 0, 0, 0),
+                                    spreadRadius: 0.5,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 5),
+                                  )
+                                ]),
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 5,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(),
+                              itemBuilder: (context, index) => Card(
+                                  child: Center(
+                                child: Text("Placeholder"),
+                              )),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.all(0),
+                            visualDensity: VisualDensity.compact,
+                            title: const Text("Songs"),
+                            value: false,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (newvalue) {},
+                          ),
+                          Container(
+                            //the tosca box
+                            height: 160,
+                            decoration: BoxDecoration(
+                                color: Color(0xffc1ffba),
+                                border: Border.all(color: Color(0xffc1ffba)),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(10)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color.fromARGB(97, 0, 0, 0),
+                                    spreadRadius: 0.5,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 5),
+                                  )
+                                ]),
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 5,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(),
+                              itemBuilder: (context, index) => Card(
+                                  child: Center(
+                                child: Text("Placeholder"),
+                              )),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    Container(
+                      //cover
+
+                      height: recomendationcheck ? 0 : 470 + 36,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        border: Border.all(
+                          color: Color.fromARGB(255, 217, 185, 165),
+                          width: 0.7,
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                    ),
+                  ]),
                   SizedBox(
                     height: 10.9,
                   ),
-                  Container(
-                    height: MediaQuery.of(context).size.height - 670 - 45,
-                    width: MediaQuery.of(context).size.width,
-                    padding: EdgeInsets.only(
-                      left: 10,
-                      right: 10,
-                      bottom: 20,
-                      top: 0,
-                    ),
-                    margin: EdgeInsets.only(top: 0),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Color.fromARGB(255, 217, 185, 165),
-                        width: 0.7,
+                  Stack(
+                    alignment: AlignmentDirectional.center,
+                    children: [
+                      Container(
+                        height: MediaQuery.of(context).size.height - 670 - 45,
+                        width: MediaQuery.of(context).size.width,
+                        padding: EdgeInsets.only(
+                          left: 10,
+                          right: 10,
+                          bottom: 20,
+                          top: 0,
+                        ),
+                        margin: EdgeInsets.only(top: 0),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Color.fromARGB(255, 217, 185, 165),
+                            width: 0.7,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RadioListTile<Readingmode>(
+                                    value: Readingmode.sabda,
+                                    groupValue: _reading,
+                                    onChanged: (value) {},
+                                    // dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text("SABDA - BAST"),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RadioListTile<Readingmode>(
+                                    title: const Text(
+                                        "Biblestudytools - chronological"),
+                                    value: Readingmode.biblestudytools,
+                                    groupValue: _reading,
+                                    // dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    onChanged: (value) {},
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RadioListTile<Readingmode>(
+                                    title: const Text("GMS - ILMB"),
+                                    value: Readingmode.gms,
+                                    groupValue: _reading,
+                                    // dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    onChanged: (value) {},
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RadioListTile<Readingmode>(
+                                    title: const Text("Custom ..."),
+                                    value: Readingmode.custom,
+                                    // dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    groupValue: _reading,
+                                    onChanged: (value) {},
+                                  ),
+                                )
+                              ],
+                            )
+                          ],
+                        ),
                       ),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                    child: Column(
-                      children: [],
-                    ),
+                      Container(
+                        //cover
+
+                        height: recomendationcheck
+                            ? MediaQuery.of(context).size.height - 670 - 45
+                            : 0,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          border: Border.all(
+                            color: Color.fromARGB(255, 217, 185, 165),
+                            width: 0.7,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                      ),
+                    ],
                   ),
                   Row(
                     children: [
@@ -287,10 +401,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
                             isDense: true,
-                            items: start_Kitab.map((String items) {
+                            items: kitabs!.map((Map items) {
                               return DropdownMenuItem(
-                                value: items,
-                                child: Text(items),
+                                value: items["kitab_singkat"],
+                                child: Text(items["kitab_singkat"]),
                               );
                             }).toList(),
                             onChanged: (value) {
@@ -368,10 +482,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
                             isDense: true,
-                            items: end_kitab.map((String items) {
+                            items: kitabs!.map((Map items) {
                               return DropdownMenuItem(
-                                value: items,
-                                child: Text(items),
+                                value: items["kitab_singkat"],
+                                child: Text(items["kitab_singkat"]),
                               );
                             }).toList(),
                             onChanged: (value) {
@@ -430,11 +544,29 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             }),
                       ),
                     ],
-                  )
-                ],
-              ),
-            )),
-      ),
-    );
+                  ),
+                ];
+              } else {
+                children = <Widget>[
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text('Loading Options...'),
+                  ),
+                ];
+              }
+              return Center(
+                  child: SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: children,
+                ),
+              ));
+            }));
   }
 }
