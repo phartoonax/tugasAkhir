@@ -2,6 +2,8 @@ import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'notes_detail.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
 class NotesAlkitab extends StatefulWidget {
   const NotesAlkitab({Key? key}) : super(key: key);
@@ -10,7 +12,17 @@ class NotesAlkitab extends StatefulWidget {
   State<NotesAlkitab> createState() => NotesAlkitabState();
 }
 
+List _items = [];
+
 class NotesAlkitabState extends State<NotesAlkitab> {
+  Future<void> readJson() async {
+    final String response = await rootBundle.loadString('assets/sample.json');
+    final data = await json.decode(response);
+    setState(() {
+      _items = data["items"];
+    });
+  }
+
   var num = [
     //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
     1,

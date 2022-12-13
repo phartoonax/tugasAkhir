@@ -51,10 +51,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       itemers = value?.cast<Map>();
     });
     DataQueryBuilder querry = DataQueryBuilder()
-      ..sortBy = ["id_kitab"]
-      ..pageSize = 66;
+      ..sortBy = ["id"]
+      ..pageSize = 31121;
     Future<List<Map?>?> initkitab =
-        Backendless.data.of('Alkitab_kitab').find(querry).then((value) {
+        Backendless.data.of('Alkitab').find(querry).then((value) {
       kitabs!.clear();
       kitabs = value?.cast<Map>();
       print("This is from new notes" + kitabs.toString());
@@ -120,7 +120,19 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
             IconButton(
                 onPressed: (() {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if(init_end_ayat=);
+                    if (init_end_ayat == null || init_end_pasal == null) {
+                    } else {
+                      if (init_end_ayat == init_start_ayat &&
+                          init_end_pasal == init_start_pasal) {
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const NotesAlkitab()),
+                        );
+                      }
+                    }
+                    ;
                   });
                 }),
                 icon: Icon(Icons.chevron_right))
@@ -401,12 +413,15 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
                             isDense: true,
-                            items: kitabs!.map((Map items) {
-                              return DropdownMenuItem(
-                                value: items["kitab_singkat"],
-                                child: Text(items["kitab_singkat"]),
-                              );
-                            }).toList(),
+                            items: kitabs!
+                                .map((Map items) {
+                                  return DropdownMenuItem(
+                                    value: items["kitab"],
+                                    child: Text(items["kitab"]),
+                                  );
+                                })
+                                .toSet()
+                                .toList(),
                             onChanged: (value) {
                               setState(() {
                                 init_start_kitab = value.toString();
