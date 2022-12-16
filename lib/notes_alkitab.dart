@@ -6,7 +6,12 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class NotesAlkitab extends StatefulWidget {
-  const NotesAlkitab({Key? key}) : super(key: key);
+  const NotesAlkitab(
+      {Key? key, required this.startindex, required this.endindex})
+      : super(key: key);
+
+  final int startindex;
+  final int endindex;
 
   @override
   State<NotesAlkitab> createState() => NotesAlkitabState();
@@ -16,36 +21,63 @@ List _items = [];
 
 class NotesAlkitabState extends State<NotesAlkitab> {
   Future<void> readJson() async {
-    final String response = await rootBundle.loadString('assets/sample.json');
+    List tempitems = [];
+    final String response = await rootBundle.loadString('assets/tbnew.json');
     final data = await json.decode(response);
     setState(() {
-      _items = data["items"];
+      tempitems = data;
+      var temp = tempitems.where((bible) =>
+          bible["id"] >= widget.startindex && bible["id"] <= widget.endindex);
+      _items.addAll(temp);
+      print(_items);
     });
   }
 
-  var num = [
-    //TODO: REPLACE THIS WITH ACTUAL DATA FROM BES
-    1,
-    2,
-    3,
-    4,
-    5,
-    1,
-    2,
-    3,
-    4,
-    5,
-    1,
-    2,
-    3,
-    4,
-    5,
-    1,
-    2,
-    3,
-    4,
-    5,
-  ];
+  initState() {
+    super.initState();
+
+    readJson();
+  }
+
+  pasalchecker(int indx) {
+    if (pasalcounter != _items[indx]["pasal"]) {
+      pasalcounter++;
+      return Container(
+          padding: EdgeInsets.only(top: 5),
+          child: RichText(
+              text: TextSpan(children: [
+            TextSpan(
+                text: _items[indx]["pasal"].toString() + "\n",
+                style: Theme.of(context).textTheme.titleLarge),
+            TextSpan(
+                text: _items[indx]["pasal"].toString() +
+                    ":" +
+                    _items[indx]["ayat"].toString(),
+                style: Theme.of(context).textTheme.labelSmall),
+            TextSpan(
+                text: _items[indx]["firman"],
+                style: Theme.of(context).textTheme.labelLarge),
+          ])));
+    } else {
+      return Container(
+        padding: EdgeInsets.only(top: 5),
+        child: RichText(
+            text: TextSpan(children: [
+          TextSpan(
+              text: _items[indx]["pasal"].toString() +
+                  ":" +
+                  _items[indx]["ayat"].toString() +
+                  " ",
+              style: Theme.of(context).textTheme.labelSmall),
+          TextSpan(
+              text: _items[indx]["firman"],
+              style: Theme.of(context).textTheme.labelLarge)
+        ])),
+      );
+    }
+  }
+
+  int pasalcounter = 0;
 //TODO: ADD ACTUAL PASSAGE FROM DB
   @override
   Widget build(BuildContext context) {
@@ -86,25 +118,10 @@ class NotesAlkitabState extends State<NotesAlkitab> {
                       child: SizedBox(
                         height: MediaQuery.of(context).size.height - 120,
                         child: ListView.builder(
-                          itemCount: 12,
+                          itemCount: _items.length,
                           padding: EdgeInsets.zero,
                           itemBuilder: (BuildContext cont, int indx) {
-                            return Container(
-                                padding: EdgeInsets.only(top: 5),
-                                child: RichText(
-                                    text: TextSpan(children: [
-                                  TextSpan(
-                                      text: num[indx].toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall),
-                                  TextSpan(
-                                      text:
-                                          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum mattis, eros non malesuada condimentum, dui diam dapibus massa, et vehicula urna leo quis lorem. Duis eu justo condimentum, vestibulum ex sodales, laoreet purus. Integer eu bibendum risus, et lacinia ante. Maecenas cursus sem vel tellus scelerisque volutpat.",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge)
-                                ])));
+                            return pasalchecker(indx);
                           },
                         ),
                       ),
