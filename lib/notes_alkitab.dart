@@ -1,4 +1,4 @@
-import 'package:backendless_sdk/backendless_sdk.dart';
+// import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'notes_detail.dart';
@@ -7,19 +7,27 @@ import 'package:flutter/services.dart';
 
 class NotesAlkitab extends StatefulWidget {
   const NotesAlkitab(
-      {Key? key, required this.startindex, required this.endindex})
+      {Key? key,
+      required this.startindex,
+      required this.endindex,
+      required this.isnew,
+      required this.datenote,
+      required this.leaderstatus})
       : super(key: key);
 
   final int startindex;
   final int endindex;
-
+  final bool isnew;
+  final String datenote;
+  final bool leaderstatus;
   @override
   State<NotesAlkitab> createState() => NotesAlkitabState();
 }
 
 List _items = [];
 
-class NotesAlkitabState extends State<NotesAlkitab> {
+class NotesAlkitabState extends State<NotesAlkitab>
+    with AutomaticKeepAliveClientMixin {
   Future<void> readJson() async {
     List tempitems = [];
     final String response = await rootBundle.loadString('assets/tbnew.json');
@@ -29,25 +37,27 @@ class NotesAlkitabState extends State<NotesAlkitab> {
       var temp = tempitems.where((bible) =>
           bible["id"] >= widget.startindex && bible["id"] <= widget.endindex);
       _items.addAll(temp);
-      print(_items);
     });
   }
 
+  @override
   initState() {
     super.initState();
-
+    _items.clear();
     readJson();
   }
 
+  @override
+  bool get wantKeepAlive => true;
+
   pasalchecker(int indx) {
-    if (pasalcounter != _items[indx]["pasal"]) {
-      pasalcounter++;
+    if (_items[indx]["ayat"] == 1) {
       return Container(
           padding: EdgeInsets.only(top: 5),
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: _items[indx]["pasal"].toString() + "\n",
+                text: "Pasal " + _items[indx]["pasal"].toString() + "\n",
                 style: Theme.of(context).textTheme.titleLarge),
             TextSpan(
                 text: _items[indx]["pasal"].toString() +
@@ -77,6 +87,44 @@ class NotesAlkitabState extends State<NotesAlkitab> {
     }
   }
 
+  readrangechecker() {
+    if (_items.first["kitab_singkat"] == _items.last["kitab_singkat"]) {
+      //sama kitab => check pasal
+      if (_items.first["pasal"] == _items.last["pasal"]) {
+        return Text(_items.first["kitab_singkat"] +
+            " " +
+            _items.first["pasal"].toString() +
+            ":" +
+            _items.first["ayat"].toString() +
+            "-" +
+            _items.last["ayat"].toString());
+      } else {
+        return Text(_items.first["kitab_singkat"] +
+            " " +
+            _items.first["pasal"].toString() +
+            ":" +
+            _items.first["ayat"].toString() +
+            "-" +
+            _items.last["pasal"].toString() +
+            ":" +
+            _items.last["ayat"].toString());
+      }
+    } else {
+      //for the beda kitab
+      return Text(_items.first["kitab_singkat"] +
+          " " +
+          _items.first["pasal"].toString() +
+          ":" +
+          _items.first["ayat"].toString() +
+          "-" +
+          _items.last["kitab_singkat"] +
+          " " +
+          _items.last["pasal"].toString() +
+          ":" +
+          _items.last["ayat"].toString());
+    }
+  }
+
   int pasalcounter = 0;
 //TODO: ADD ACTUAL PASSAGE FROM DB
   @override
@@ -88,16 +136,35 @@ class NotesAlkitabState extends State<NotesAlkitab> {
 
     return Scaffold(
         appBar: AppBar(
-          title: const Text(
-              "Glory Living"), // temp. REPLACE with actual scripture reading
+          title:
+              readrangechecker(), // temp. REPLACE with actual scripture reading
+          automaticallyImplyLeading: widget.isnew,
           actions: [
+            Center(
+              child: Text(
+                widget.datenote,
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.white),
+              ),
+            ),
+            Container(
+              width: 10,
+            ),
             IconButton(
                 onPressed: () {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const NotesDetail()),
+                          builder: (context) => NotesDetail(
+                                endindex: widget.endindex,
+                                startindex: widget.startindex,
+                                isnew: widget.isnew,
+                                datenote: widget.datenote,
+                                leaderstatus: widget.leaderstatus,
+                              )),
                     );
                   });
                 },
@@ -106,49 +173,54 @@ class NotesAlkitabState extends State<NotesAlkitab> {
         ),
         body: SizedBox(
           height: MediaQuery.of(context).size.height,
-          child: FutureBuilder<String>(
-            future: _calculation,
-            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-              List<Widget> children;
-              if (snapshot.hasData) {
-                children = <Widget>[
-                  Padding(
-                    padding: EdgeInsets.only(left: 10, right: 10, top: 30),
-                    child: SingleChildScrollView(
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height - 120,
-                        child: ListView.builder(
-                          itemCount: _items.length,
-                          padding: EdgeInsets.zero,
-                          itemBuilder: (BuildContext cont, int indx) {
-                            return pasalchecker(indx);
-                          },
+          child: KeepAlive(
+            keepAlive: true,
+            child: FutureBuilder<String>(
+              future: _calculation,
+              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                List<Widget> children;
+                if (snapshot.hasData) {
+                  children = <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(left: 10, right: 10, top: 30),
+                      child: SingleChildScrollView(
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height - 120,
+                          child: ListView.builder(
+                            itemCount: _items.length,
+                            cacheExtent: 300,
+                            addAutomaticKeepAlives: true,
+                            padding: EdgeInsets.zero,
+                            itemBuilder: (BuildContext cont, int indx) {
+                              return pasalchecker(indx);
+                            },
+                          ),
                         ),
                       ),
+                    )
+                  ];
+                } else {
+                  children = <Widget>[
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: CircularProgressIndicator(),
                     ),
-                  )
-                ];
-              } else {
-                children = <Widget>[
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: Text('Awaiting result...'),
-                  ),
-                ];
-              }
-              return Center(
-                  child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: children,
-              ));
-            },
+                    Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text('Awaiting result...'),
+                    ),
+                  ];
+                }
+                return Center(
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: children,
+                ));
+              },
 
-            /// setup a listview for the scripture. style is tbd.
+              /// setup a listview for the scripture. style is tbd.
+            ),
           ),
         ));
   }

@@ -9,15 +9,14 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class NewNotesinitPage extends StatefulWidget {
-  const NewNotesinitPage({Key? key}) : super(key: key);
-
+  const NewNotesinitPage({Key? key, required this.leaderstatus})
+      : super(key: key);
+  final bool leaderstatus;
   @override
   State<NewNotesinitPage> createState() => _NewNotesinitPageState();
 }
 
-List<Map>? itemers = [
-  {"judul_genre": ""}
-];
+List<Map>? itemers = List.empty(growable: true);
 List<Map>? kitabs = [
   {"kitab_singkat": ""}
 ];
@@ -27,11 +26,13 @@ enum Readingmode { sabda, biblestudytools, gms, custom }
 
 class _NewNotesinitPageState extends State<NewNotesinitPage> {
   List _items = [];
+  List<Map>? _guide = List.empty(growable: true);
   Set kitab = Set();
   Readingmode? _reading = Readingmode.custom;
   bool recomendationcheck = false;
   bool devotioncheck = false;
   bool songcheck = false;
+  bool customselect = true;
 
   String? initdropdownvalue;
   String? init_start_kitab;
@@ -46,7 +47,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     super.initState();
     init();
     var now = new DateTime.now();
-    var formatter = new DateFormat('dd-MM-yy');
+    var formatter = new DateFormat('dd-MMM-yy');
     formattedDate = formatter.format(now);
     readJson();
   }
@@ -58,14 +59,12 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       itemers = value?.cast<Map>();
     });
     DataQueryBuilder querry = DataQueryBuilder()
-      ..sortBy = ["id"]
+      ..whereClause = "created > '23-Mar-2015'"
       ..pageSize = 100;
-    // Future<List<Map?>?> initkitab =
-    //     Backendless.data.of('Alkitab').find(querry).then((value) {
-    //   kitabs!.clear();
-    //   kitabs = value?.cast<Map>();
-    //   print("This is from new notes" + kitabs.toString());
-    // });
+    Future<List<Map?>?> initguide =
+        Backendless.data.of('devotion_guide').find(querry).then((value) {
+      _guide = value?.cast<Map>();
+    });
 
     setState(() {});
   }
@@ -120,22 +119,31 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     return Scaffold(
         appBar: AppBar(
           title: Text('Add New Notes'),
-          leading: BackButton(
-            onPressed: () => Navigator.pop(context),
-          ),
+          leading: BackButton(),
           actions: [
             Center(
-              child: Text(formattedDate),
+              child: Text(
+                formattedDate,
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.white),
+              ),
             ),
-            IconButton(
-                onPressed: (() {}), icon: Icon(Icons.calendar_month_outlined)),
+            Container(
+              width: 10,
+            ),
+            // IconButton(
+            // onPressed: (() {}), icon: Icon(Icons.calendar_month_outlined)),
             IconButton(
                 onPressed: (() {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (init_end_ayat == null || init_end_pasal == null) {
+                      // pop a snackbar error
                     } else {
                       if (init_end_ayat == init_start_ayat &&
                           init_end_pasal == init_start_pasal) {
+                        // pop a snackbar error
                       } else {
                         int starti = 0;
                         int endi = 0;
@@ -150,7 +158,6 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             e["pasal"] == int.parse(init_end_pasal as String) &&
                             e["ayat"] ==
                                 int.parse(init_end_ayat as String))["id"];
-                        
 
                         Navigator.push(
                           context,
@@ -158,6 +165,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                               builder: (context) => NotesAlkitab(
                                     startindex: starti,
                                     endindex: endi,
+                                    isnew: true,
+                                    datenote: formattedDate,
+                                    leaderstatus: widget.leaderstatus,
                                   )),
                         );
                       }
@@ -263,16 +273,18 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     offset: Offset(0, 5),
                                   )
                                 ]),
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: 5,
-                              separatorBuilder: (context, index) =>
-                                  const Divider(),
-                              itemBuilder: (context, index) => Card(
-                                  child: Center(
-                                child: Text("Placeholder"),
-                              )),
-                            ),
+                            child: devotioncheck
+                                ? ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: 5,
+                                    separatorBuilder: (context, index) =>
+                                        const Divider(),
+                                    itemBuilder: (context, index) => Card(
+                                        child: Expanded(
+                                      child: Text("Placeholder"),
+                                    )),
+                                  )
+                                : Container(),
                           ),
                           SizedBox(height: 20),
                           CheckboxListTile(
@@ -302,16 +314,18 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     offset: Offset(0, 5),
                                   )
                                 ]),
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: 5,
-                              separatorBuilder: (context, index) =>
-                                  const Divider(),
-                              itemBuilder: (context, index) => Card(
-                                  child: Center(
-                                child: Text("Placeholder"),
-                              )),
-                            ),
+                            child: songcheck
+                                ? ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: 5,
+                                    separatorBuilder: (context, index) =>
+                                        const Divider(),
+                                    itemBuilder: (context, index) => Card(
+                                        child: Center(
+                                      child: Text("Placeholder"),
+                                    )),
+                                  )
+                                : Container(),
                           ),
                         ],
                       ),
@@ -361,7 +375,41 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                   child: RadioListTile<Readingmode>(
                                     value: Readingmode.sabda,
                                     groupValue: _reading,
-                                    onChanged: (value) {},
+                                    onChanged: (value) {
+                                      start_pasal.clear();
+                                      end_pasal.clear();
+                                      start_ayat.clear();
+                                      end_ayat.clear();
+                                      var temppasal = (_items.where((pasal) =>
+                                          (pasal["kitab_singkat"] == value)));
+                                      temppasal.forEach((element) {
+                                        start_pasal
+                                            .add(element["pasal"].toString());
+                                        end_pasal
+                                            .add(element["pasal"].toString());
+                                      });
+                                      var tempayatawal = (temppasal.where(
+                                          (ayat) => (ayat["pasal"] == 1)));
+                                      tempayatawal.forEach((element) {
+                                        start_ayat
+                                            .add(element["ayat"].toString());
+                                        end_ayat
+                                            .add(element["ayat"].toString());
+                                      });
+
+                                      init_start_kitab = value.toString();
+                                      init_start_pasal =
+                                          start_pasal.elementAt(0).toString();
+                                      init_start_ayat =
+                                          start_ayat.elementAt(0).toString();
+                                      init_end_kitab = value.toString();
+                                      init_end_pasal =
+                                          start_pasal.elementAt(0).toString();
+                                      init_end_ayat =
+                                          start_ayat.elementAt(1).toString();
+
+                                      _reading = value;
+                                    },
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
                                     title: const Text("SABDA - BAST"),
@@ -375,7 +423,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     groupValue: _reading,
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
-                                    onChanged: (value) {},
+                                    onChanged: (value) {
+                                      _reading = value;
+                                    },
                                   ),
                                 ),
                               ],
@@ -389,7 +439,41 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     groupValue: _reading,
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
-                                    onChanged: (value) {},
+                                    onChanged: (value) {
+                                      setState(() {
+                                        init_start_kitab = "Neh";
+                                        customselect = false;
+
+                                        _reading = value;
+                                      });
+                                      // start_pasal.clear();
+                                      // end_pasal.clear();
+                                      // start_ayat.clear();
+                                      // end_ayat.clear();
+                                      // var temppasal = (_items.where((pasal) =>
+                                      //     (pasal["kitab_singkat"] == value)));
+                                      // temppasal.forEach((element) {
+                                      //   start_pasal.add(element["pasal"].toString());
+                                      //   end_pasal.add(element["pasal"].toString());
+                                      // });
+                                      // var tempayat = (temppasal
+                                      //     .where((ayat) => (ayat["pasal"] == 1)));
+                                      // tempayat.forEach((element) {
+                                      //   start_ayat.add(elesment["ayat"].toString());
+                                      //   end_ayat.add(element["ayat"].toString());
+                                      // });
+
+                                      // init_start_kitab = value.toString();
+                                      // init_start_pasal =
+                                      //     start_pasal.elementAt(0).toString();
+                                      // init_start_ayat =
+                                      //     start_ayat.elementAt(0).toString();
+                                      // init_end_kitab = value.toString();
+                                      // init_end_pasal =
+                                      //     start_pasal.elementAt(0).toString();
+                                      // init_end_ayat =
+                                      //     start_ayat.elementAt(1).toString();
+                                    },
                                   ),
                                 ),
                                 Expanded(
@@ -399,7 +483,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
                                     groupValue: _reading,
-                                    onChanged: (value) {},
+                                    onChanged: (value) {
+                                      _reading = value;
+                                    },
                                   ),
                                 )
                               ],

@@ -37,14 +37,14 @@ class _SplashScreenState extends State<SplashScreen> {
     print("the login data is outside check splash|" + isLogin.toString());
     if (isLogin == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
               builder: (context) => const LoginPage(title: "Login UI")),

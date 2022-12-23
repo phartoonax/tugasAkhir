@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
+import 'package:intl/intl.dart';
 import 'alarm_screen.dart';
 import 'leaderspage.dart';
 import 'new_notes_init.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'notes_detail.dart';
 
 const String SERVER_URL = "https://eu-api.backendless.com";
 const String APPLICATION_ID = "A5B771C1-B135-1146-FFC2-204701E95500";
@@ -19,21 +23,35 @@ class MainScreen extends StatefulWidget {
 
 String namas = "";
 String ids = "";
-List<Map>? listnote = [
-  {"": ""}
-];
+List<Map> listnote = List<Map>.empty(growable: true);
+
+List _items = [];
+
 bool notesstatus = false;
 
 bool leadstatus = false;
 
 class _MainScreenState extends State<MainScreen> {
+  Future<void> readJson() async {
+    List tempitems = [];
+    final String response = await rootBundle.loadString('assets/tbnew.json');
+    final data = await json.decode(response);
+    setState(() {
+      tempitems = data;
+
+      _items.addAll(tempitems);
+    });
+  }
+
   @override
   initState() {
     super.initState();
-    init();
+    loadnotes();
+    readJson();
   }
 
-  void init() async {
+  Future<void> loadnotes() async {
+    notesstatus = false;
     String currentUserObjectId = "";
     currentUserObjectId = (await Backendless.userService.loggedInUser())!;
     Backendless.data
@@ -48,28 +66,30 @@ class _MainScreenState extends State<MainScreen> {
           .of('Users')
           .findById(ids, relations: ["leader_student"], relationsDepth: 1);
       parsedat = (await userdat)!;
-      print(parsedat.toString());
+      print("From loadnotes | logindata = " + parsedat.toString());
       if (parsedat["leader_student"].toString() != "[]") {
         leadstatus = true;
       }
       DataQueryBuilder searchnotes = DataQueryBuilder()
         ..whereClause = "ownerId = '$currentUserObjectId'"
-        ..related = ["start_alkitab", "end_alkitab"]
-        ..relationsDepth = 1;
+        ..sortBy = ["created DESC"];
+      // ..related = ["start_alkitab", "end_alkitab"]
+      // ..relationsDepth = 1;
 
       // ignore: unused_local_variable
       Future<List<Map?>?> inititem = Backendless.data
           .of('Catatan_Sate')
           .find(searchnotes)
           .then((foundnotes) {
-        listnote!.clear();
-        listnote = foundnotes?.cast<Map>();
+        listnote.clear();
+        listnote.addAll(foundnotes!.cast<Map>());
         notesstatus = true;
-        print(listnote.toString());
+        // print("Notes found for user: " + listnote.toString());
         setState(() {});
       });
       setState(() {});
     });
+    setState(() {});
   }
 
   void _onItemTapped(int index) {
@@ -99,14 +119,22 @@ class _MainScreenState extends State<MainScreen> {
       AlarmScreen(),
     ];
     return Scaffold(
-      body: screens[_selectedIndex],
+      body: RefreshIndicator(
+          onRefresh: loadnotes,
+          child: Container(child: screens[_selectedIndex])),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.push(
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const NewNotesinitPage()),
-            );
+              MaterialPageRoute(
+                  builder: (context) => NewNotesinitPage(
+                        leaderstatus: leadstatus,
+                      )),
+            ).then((value) {
+              loadnotes();
+              setState(() {});
+            });
           });
         },
         child: Icon(Icons.add),
@@ -340,6 +368,44 @@ class _ContentMainState extends State<ContentMain> {
     );
   }
 
+  readrangechecker(int awal, int akhir) {
+    if (_items[awal]["kitab_singkat"] == _items[akhir]["kitab_singkat"]) {
+      //sama kitab => check pasal
+      if (_items[awal]["pasal"] == _items[akhir]["pasal"]) {
+        return Text(_items[awal]["kitab_singkat"] +
+            " " +
+            _items[awal]["pasal"].toString() +
+            ":" +
+            _items[awal]["ayat"].toString() +
+            "-" +
+            _items[akhir]["ayat"].toString());
+      } else {
+        return Text(_items[awal]["kitab_singkat"] +
+            " " +
+            _items[awal]["pasal"].toString() +
+            ":" +
+            _items[awal]["ayat"].toString() +
+            "-" +
+            _items[akhir]["pasal"].toString() +
+            ":" +
+            _items[akhir]["ayat"].toString());
+      }
+    } else {
+      //for the beda kitab
+      return Text(_items[awal]["kitab_singkat"] +
+          " " +
+          _items[awal]["pasal"].toString() +
+          ":" +
+          _items[awal]["ayat"].toString() +
+          "-" +
+          _items[akhir]["kitab_singkat"] +
+          " " +
+          _items[akhir]["pasal"].toString() +
+          ":" +
+          _items[akhir]["ayat"].toString());
+    }
+  }
+
   shownotes() {
     if (widget.statusnotesload == false) {
       return Center(
@@ -366,14 +432,41 @@ class _ContentMainState extends State<ContentMain> {
           padding: EdgeInsets.zero,
           itemCount: widget.notes!.length,
           itemBuilder: (context, index) {
+            var now = widget.notes![index]['created'];
+            var formatter = new DateFormat('dd MMM yy');
+            formattedDate = formatter.format(now);
             return Card(
               child: ListTile(
                 leading: Icon(
                   Icons.description,
                 ),
-                title: widget.notes![index]['judul_catatan'],
-                subtitle: Text('kejadian 1:1'),
-                onTap: () {},
+                title: Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(widget.notes![index]['judul_catatan']),
+                ),
+                subtitle: readrangechecker(widget.notes![index]['idstartkitab'],
+                    widget.notes![index]['idendkitab']),
+                dense: false,
+                trailing: Text(formattedDate),
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotesDetail(
+                                endindex: widget.notes![index]['idendkitab'],
+                                startindex: widget.notes![index]
+                                    ['idstartkitab'],
+                                isnew: false,
+                                idrecommend: widget.notes![index],
+                                datenote: formattedDate,
+                                leaderstatus: leadstatus,
+                              )),
+                    ).then((value) {
+                      setState(() {});
+                    });
+                  });
+                },
               ),
             );
           },
