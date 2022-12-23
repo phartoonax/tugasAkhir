@@ -462,9 +462,7 @@ class _ContentMainState extends State<ContentMain> {
                                 datenote: formattedDate,
                                 leaderstatus: leadstatus,
                               )),
-                    ).then((value) {
-                      setState(() {});
-                    });
+                    );
                   });
                 },
               ),
