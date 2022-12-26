@@ -2,5 +2,6 @@
     package="com.example.tugas_akhir">
     
     <uses-permission android:name="android.permission.INTERNET"/>
+    
 </manifest>
 							

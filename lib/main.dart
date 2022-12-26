@@ -3,6 +3,8 @@ import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:tugas_akhir/splash.dart';
 import 'dart:developer' as dev;
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() {
   runApp(const MyApp());
@@ -51,10 +53,13 @@ class _MyAppState extends State<MyApp> {
       jsApiKey: JS_API_KEY,
     );
     await Backendless.setUrl(SERVER_URL);
-    Backendless.userService.getUserToken().then((userToken) {
-      print("API RES IN MAIN | " + userToken.toString());
-      if (userToken != null && userToken.isNotEmpty) {}
-    });
+    // Backendless.userService.getUserToken().then((userToken) {
+    //   print("API RES IN MAIN | " + userToken.toString());
+    //   if (userToken != null && userToken.isNotEmpty) {}
+    // });
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
 
   @override

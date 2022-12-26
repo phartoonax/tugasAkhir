@@ -5,6 +5,12 @@
 
         android:label="tugas_akhir"
         android:icon="@mipmap/ic_launcher">
+        <service android:name="com.backendless.backendless_sdk.common.FlutterBackendlessFCMService"
+                  android:exported="true">
+          <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+          </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -19,10 +25,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
         </activity>
 								<meta-data
 								android:name="flutterEmbedding"
 								android:value="2" />
     </application>
+    
 </manifest>
 							

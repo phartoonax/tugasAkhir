@@ -13,11 +13,15 @@ dependencies:
   flutter_launcher_icons: ^0.11.0
 
   cupertino_icons: ^1.0.5
-  webview_flutter: ^3.0.4
+  webview_flutter: ^4.0.1
   shared_preferences: ^2.0.15
-  intl: ^0.17.0
+  intl: ^0.18.0
   carousel_slider: ^4.2.0
   flutter_expandable_fab: ^1.6.1
+  email_validator: ^2.1.17
+  flutter_slidable: ^2.0.0
+  firebase_core: ^2.4.0
+  firebase_messaging: ^14.2.0
 
 
 dev_dependencies:

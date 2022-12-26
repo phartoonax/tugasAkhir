@@ -24,6 +24,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
               'alarm page stageholder',
             ),
             ElevatedButton(onPressed: () => logout(), child: Text("logout"))
+            
           ],
         ),
       )),

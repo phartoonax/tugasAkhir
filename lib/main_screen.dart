@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'alarm_screen.dart';
 import 'leaderspage.dart';
@@ -15,8 +16,8 @@ const String IOS_API_KEY = "140898C0-D6DC-459E-A62E-20FF3A644653";
 const String JS_API_KEY = "D4EF9175-2546-4B17-9038-14A77F5186F5";
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
-
+  MainScreen({Key? key, this.id}) : super(key: key);
+  final String? id;
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
@@ -73,18 +74,12 @@ class _MainScreenState extends State<MainScreen> {
       DataQueryBuilder searchnotes = DataQueryBuilder()
         ..whereClause = "ownerId = '$currentUserObjectId'"
         ..sortBy = ["created DESC"];
-      // ..related = ["start_alkitab", "end_alkitab"]
-      // ..relationsDepth = 1;
 
-      // ignore: unused_local_variable
-      Future<List<Map?>?> inititem = Backendless.data
-          .of('Catatan_Sate')
-          .find(searchnotes)
-          .then((foundnotes) {
+      Backendless.data.of('Catatan_Sate').find(searchnotes).then((foundnotes) {
         listnote.clear();
         listnote.addAll(foundnotes!.cast<Map>());
         notesstatus = true;
-        // print("Notes found for user: " + listnote.toString());
+
         setState(() {});
       });
       setState(() {});
@@ -257,7 +252,7 @@ class _ContentMainState extends State<ContentMain> {
                             ),
                           )
                         : Text(
-                            'Good Day, ' + widget.name + '!',
+                            'Hai, ' + widget.name + '!',
                             style: TextStyle(
                               fontFamily: 'Roboto',
                               fontSize: 28,
@@ -340,7 +335,15 @@ class _ContentMainState extends State<ContentMain> {
                     width: 180,
                     child: IconButton(
                       padding: EdgeInsets.all(0),
-                      onPressed: () {},
+                      onPressed: () {
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) => CustomDialog(
+                                  name: widget.name,
+                                  checkined: false,
+                                  numberofcheckinweek: 4,
+                                ));
+                      },
                       icon: Image.asset(
                         'assets/Checkin.png',
                         fit: BoxFit.fill,
@@ -436,40 +439,201 @@ class _ContentMainState extends State<ContentMain> {
             var formatter = new DateFormat('dd MMM yy');
             formattedDate = formatter.format(now);
             return Card(
-              child: ListTile(
-                leading: Icon(
-                  Icons.description,
+              child: Slidable(
+                key: const ValueKey(0),
+                endActionPane: ActionPane(motion: BehindMotion(), children: [
+                  SlidableAction(
+                    onPressed: (context) {},
+                    backgroundColor: Color(0xFF7BC043),
+                    foregroundColor: Colors.white,
+                    icon: Icons.archive,
+                    label: 'Archive',
+                  ),
+                  SlidableAction(
+                    onPressed: (context) {
+                      Backendless.data
+                          .of("Catatan_Sate")
+                          .remove(entity: widget.notes![index])
+                          .then((value) => print(value));
+                      widget.notes!.removeAt(index);
+                      setState(() {});
+                    },
+                    backgroundColor: Color.fromARGB(255, 207, 3, 3),
+                    foregroundColor: Colors.white,
+                    icon: Icons.delete,
+                    label: 'delete',
+                  ),
+                ]),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.description,
+                  ),
+                  title: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(widget.notes![index]['judul_catatan']),
+                  ),
+                  subtitle: readrangechecker(
+                      widget.notes![index]['idstartkitab'],
+                      widget.notes![index]['idendkitab']),
+                  dense: false,
+                  trailing: Text(formattedDate),
+                  onTap: () {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => NotesDetail(
+                                  endindex: widget.notes![index]['idendkitab'],
+                                  startindex: widget.notes![index]
+                                      ['idstartkitab'],
+                                  isnew: false,
+                                  idrecommend: widget.notes![index],
+                                  datenote: formattedDate,
+                                  leaderstatus: leadstatus,
+                                )),
+                      );
+                    });
+                  },
                 ),
-                title: Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(widget.notes![index]['judul_catatan']),
-                ),
-                subtitle: readrangechecker(widget.notes![index]['idstartkitab'],
-                    widget.notes![index]['idendkitab']),
-                dense: false,
-                trailing: Text(formattedDate),
-                onTap: () {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => NotesDetail(
-                                endindex: widget.notes![index]['idendkitab'],
-                                startindex: widget.notes![index]
-                                    ['idstartkitab'],
-                                isnew: false,
-                                idrecommend: widget.notes![index],
-                                datenote: formattedDate,
-                                leaderstatus: leadstatus,
-                              )),
-                    );
-                  });
-                },
               ),
             );
           },
         );
       }
     }
+  }
+}
+
+class CustomDialog extends StatefulWidget {
+  final String name;
+  bool checkined;
+  int numberofcheckinweek;
+
+  CustomDialog(
+      {super.key,
+      required this.name,
+      required this.checkined,
+      required this.numberofcheckinweek});
+  @override
+  State<CustomDialog> createState() => _CustomDialogState();
+}
+
+class _CustomDialogState extends State<CustomDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      elevation: 0.0,
+      backgroundColor: Colors.transparent,
+      child: dialogContent(context),
+    );
+  }
+
+  Widget dialogContent(BuildContext context) {
+    var names = widget.name;
+    int checkcount = widget.numberofcheckinweek;
+    return Container(
+      margin: EdgeInsets.only(left: 0.0, right: 0.0),
+      child: Stack(
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.only(
+              top: 18.0,
+            ),
+            margin: EdgeInsets.only(top: 13.0, right: 8.0),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.rectangle,
+                borderRadius: BorderRadius.circular(10.0),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 0.0,
+                    offset: Offset(0.0, 0.0),
+                  ),
+                ]),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SizedBox(
+                  height: 10.0,
+                ),
+                Container(
+                    child: Column(
+                  children: [
+                    Container(
+                      alignment: AlignmentDirectional.topStart,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            right: 10.0, bottom: 10, top: 5, left: 5),
+                        child: new Text("Selamat Datang, $names!",
+                            style:
+                                TextStyle(fontSize: 24.0, color: Colors.black)),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(7),
+                      child: Text(
+                          widget.checkined
+                              ? "Anda sudah melakukan absen pada hari ini! Dalam minggu ini, anda telah melakukan $checkcount sesi Saat Teduh! Mari lakukan lebih lagi Besok!"
+                              : "Mari melakukan absen pada hari ini untuk merekam hasil anda hari ini! Dalam minggu ini, anda telah melakukan $checkcount sesi Saat Teduh!",
+                          style:
+                              TextStyle(fontSize: 14.0, color: Colors.black)),
+                    )
+                  ],
+                ) //
+                    ),
+                SizedBox(height: 24.0),
+                InkWell(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: Container(
+                      padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+                      decoration: BoxDecoration(
+                        color: widget.checkined
+                            ? Colors.grey[600]
+                            : Colors.lightGreen,
+                        borderRadius: BorderRadius.all(Radius.circular(16.0)),
+                      ),
+                      child: Text(
+                        widget.checkined ? "Checked In" : "Check In!",
+                        style: TextStyle(color: Colors.white, fontSize: 18.0),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    widget.checkined = true;
+                    widget.numberofcheckinweek++;
+                    // Navigator.pop(context);
+                    setState(() {});
+                  },
+                ),
+                SizedBox(height: 24.0),
+              ],
+            ),
+          ),
+          Positioned(
+            //close button
+
+            right: 0.0,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Align(
+                alignment: Alignment.topRight,
+                child: CircleAvatar(
+                  radius: 14.0,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.close, color: Colors.red),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

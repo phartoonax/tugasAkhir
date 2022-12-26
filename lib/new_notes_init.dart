@@ -643,10 +643,30 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             onChanged: (value) {
                               setState(() {
                                 init_start_ayat = value.toString();
+
                                 if (init_start_pasal == init_end_pasal) {
-                                  init_end_ayat =
-                                      (int.parse(value as String) + 1)
-                                          .toString();
+                                  if (value == start_ayat.last.toString()) {
+                                    init_end_pasal =
+                                        (int.parse(init_start_pasal as String) +
+                                                1)
+                                            .toString();
+
+                                    end_ayat.clear();
+
+                                    var tempayat = (_items.where((ayat) =>
+                                        (ayat["pasal"] ==
+                                                int.parse(
+                                                    init_end_pasal as String) &&
+                                            ayat["kitab_singkat"] ==
+                                                init_start_kitab)));
+                                    tempayat.forEach((element) {
+                                      end_ayat.add(element["ayat"].toString());
+                                    });
+                                  } else {
+                                    init_end_ayat =
+                                        (int.parse(value as String) + 1)
+                                            .toString();
+                                  }
                                 }
                               });
                             }),
@@ -752,7 +772,8 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                         int.parse(init_start_pasal as String) &&
                                     element["kitab_singkat"] ==
                                         init_start_kitab &&
-                                    element["ayat"] == 1);
+                                    element["ayat"] ==
+                                        int.parse(init_start_ayat as String));
                                 indexakhir = _items.singleWhere((element) =>
                                     element["pasal"] ==
                                         int.parse(value as String) &&

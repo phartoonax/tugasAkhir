@@ -2,10 +2,15 @@ buildscript {
     repositories {
         google()
         jcenter()
+        mavenCentral()  // Maven Central repository
     }
 
     dependencies {
+        
         classpath 'com.android.tools.build:gradle:7.0.2'
+        // START: FlutterFire Configuration
+        classpath 'com.google.gms:google-services:4.3.13'
+        // END: FlutterFire Configuration
     }
 }
 
@@ -13,6 +18,7 @@ allprojects {
     repositories {
         google()
         jcenter()
+        mavenCentral()  // Maven Central repository
     }
 }
 

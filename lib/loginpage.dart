@@ -1,9 +1,9 @@
 import 'package:backendless_sdk/backendless_sdk.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tugas_akhir/main_screen.dart';
 import 'package:tugas_akhir/registerpage.dart';
-// import 'package:tugas_akhir/main.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key, required this.title}) : super(key: key);
@@ -12,6 +12,8 @@ class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
+
+FocusNode node = new FocusNode();
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
@@ -23,20 +25,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void initState() {
+    node.addListener(() {
+      if (!node.hasFocus) {
+        formatNickname();
+      }
+    });
+
     super.initState();
-    // Backendless.userService
-    //     .login("henry.darawia@gmail.com", "123456", true)
-    //     .then((user) {
-    //   Backendless.userService.isValidLogin().then((response) {
-    //     print("Is login valid? auto - $response");
-    //     if (response == true) {
-    //       Navigator.pushReplacement(
-    //         context,
-    //         MaterialPageRoute(builder: (context) => const MainScreen()),
-    //       );
-    //     }
-    //   });
-    // });
+  }
+
+  void formatNickname() {
+    emailController.text = emailController.text.replaceAll(" ", "");
   }
 
   @override
@@ -78,9 +77,15 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         children: [
                           TextFormField(
-                            // validator: (value) => EmailValidator.validate(value!)
-                            // ? null
-                            // : "Please enter a valid email",
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                value = value!.trim();
+                                EmailValidator.validate(value)
+                                    ? null
+                                    : "Please enter a valid email";
+                              }
+                            },
+                            focusNode: node,
                             maxLines: 1,
                             controller: emailController,
                             decoration: InputDecoration(
@@ -152,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => const MainScreen()),
+                                      builder: (context) => MainScreen()),
                                 );
                               }
                             }).catchError((onError) {

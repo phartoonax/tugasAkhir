@@ -135,7 +135,7 @@ class _NotesDetailState extends State<NotesDetail> {
         print("save Status" + value.toString());
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => const MainScreen()))
+                  MaterialPageRoute(builder: (context) => MainScreen()))
               .then((value) {
             setState(() {});
           });
@@ -149,7 +149,7 @@ class _NotesDetailState extends State<NotesDetail> {
         print("update Status" + value.toString());
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => const MainScreen()))
+                  MaterialPageRoute(builder: (context) => MainScreen()))
               .then((value) {
             setState(() {});
           });

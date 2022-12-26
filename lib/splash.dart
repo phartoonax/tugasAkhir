@@ -17,6 +17,7 @@ const String ANDROID_API_KEY = "0CCFCDB3-0974-43B5-BD23-61FA6745C4A3";
 const String IOS_API_KEY = "140898C0-D6DC-459E-A62E-20FF3A644653";
 const String JS_API_KEY = "D4EF9175-2546-4B17-9038-14A77F5186F5";
 bool isLogin = false;
+bool loaded = false;
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
@@ -28,18 +29,26 @@ class _SplashScreenState extends State<SplashScreen> {
   void splashDelay() async {
     await Backendless.userService.getUserToken().then((userToken) {
       if (userToken != null && userToken.isNotEmpty) {
-        isLogin = true;
-        Backendless.userService.isValidLogin();
-        print("API RES IN SPLASH | " + isLogin.toString());
+        Backendless.userService.isValidLogin().then((value) {
+          isLogin = value!;
+          print("API RES IN SPLASH | " + isLogin.toString());
+          nav(isLogin);
+        });
+
         setState(() {});
+      } else {
+        nav(isLogin);
       }
     });
-    print("the login data is outside check splash|" + isLogin.toString());
-    if (isLogin == true) {
+    // print("the login data is outside check splash|" + isLogin.toString());
+  }
+
+  void nav(bool logs) {
+    if (logs == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       });
     } else {
@@ -51,6 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       });
     }
+    setState(() {});
   }
 
   @override
