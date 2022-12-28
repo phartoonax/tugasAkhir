@@ -9,9 +9,15 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class NewNotesinitPage extends StatefulWidget {
-  const NewNotesinitPage({Key? key, required this.leaderstatus})
+  NewNotesinitPage(
+      {Key? key,
+      required this.leaderstatus,
+      this.lastreading,
+      required this.isnewabsen})
       : super(key: key);
   final bool leaderstatus;
+  final bool isnewabsen;
+  final Map? lastreading;
   @override
   State<NewNotesinitPage> createState() => _NewNotesinitPageState();
 }
@@ -26,7 +32,7 @@ enum Readingmode { sabda, biblestudytools, gms, custom }
 
 class _NewNotesinitPageState extends State<NewNotesinitPage> {
   List _items = [];
-  List<Map>? _guide = List.empty(growable: true);
+  List<Map>? _guide = List.empty(growable: true); //for devGuide
   Set kitab = Set();
   Readingmode? _reading = Readingmode.custom;
   bool recomendationcheck = false;
@@ -43,6 +49,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
   String? init_end_pasal;
   String? init_end_ayat;
 
+  int lastreadingindex = 0;
   initState() {
     super.initState();
     init();
@@ -53,16 +60,15 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
   }
 
   void init() async {
-    Future<List<Map?>?> inititem =
-        Backendless.data.of('Rekomendasi_Genre').find().then((value) {
+    Backendless.data.of('Rekomendasi_Genre').find().then((value) {
       itemers!.clear();
       itemers = value?.cast<Map>();
     });
     DataQueryBuilder querry = DataQueryBuilder()
       ..whereClause = "created > '23-Mar-2015'"
       ..pageSize = 100;
-    Future<List<Map?>?> initguide =
-        Backendless.data.of('devotion_guide').find(querry).then((value) {
+
+    Backendless.data.of('devotion_guide').find(querry).then((value) {
       _guide = value?.cast<Map>();
     });
 
@@ -77,6 +83,85 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       _items.forEach((e) {
         kitab.add(e["kitab_singkat"]);
       });
+      if (widget.lastreading != null) {
+        lastreadingindex = widget.lastreading!["idendkitab"] + 1;
+
+        var stager = _items[lastreadingindex - 1];
+        //load start
+        init_start_kitab = stager["kitab_singkat"];
+        var tempasal = (_items
+            .where((kit) => (kit["kitab_singkat"] == stager["kitab_singkat"])));
+        tempasal.forEach((element) {
+          start_pasal.add(element["pasal"].toString());
+        });
+        init_start_pasal = stager["pasal"].toString();
+        var tempayat =
+            (tempasal.where((ayat) => (ayat["pasal"] == init_start_pasal)));
+        tempayat.forEach((element) {
+          start_ayat.add(element["ayat"].toString());
+        });
+        init_start_ayat = stager["ayat"].toString();
+        //load start done
+        if (stager["pasal"] == _items[lastreadingindex]["pasal"]) {
+          init_end_kitab = stager["kitab_singkat"];
+          init_end_pasal = stager["pasal"].toString();
+          init_end_ayat = _items[lastreadingindex]["ayat"].toString();
+          end_pasal.addAll(start_pasal);
+          end_ayat.addAll(start_ayat);
+        } else {
+          if (stager["kitab_singkat"] ==
+              _items[lastreadingindex]["kitab_singkat"]) {
+            //ubah pasal end saja, kitab tetap
+            init_end_kitab = stager["kitab_singkat"];
+            init_end_pasal = (stager["pasal"] + 1).toString();
+            end_pasal.addAll(start_pasal);
+            var tempayatend =
+                (tempasal.where((ayat) => (ayat["pasal"] == init_end_pasal)));
+            tempayatend.forEach((element) {
+              end_ayat.add(element["ayat"].toString());
+            });
+            init_end_ayat = end_ayat.first;
+          } else {
+            //kitab juga berubah.
+            init_end_kitab = (_items[lastreadingindex]["kitab_singkat"]);
+            var tempasalend = (_items
+                .where((kit) => (kit["kitab_singkat"] == init_end_kitab)));
+            tempasalend.forEach((element) {
+              end_pasal.add(element["Pasal"].toString());
+            });
+            init_end_pasal = end_pasal.first;
+            var tempayatend =
+                (tempasal.where((ayat) => (ayat["pasal"] == init_end_pasal)));
+            tempayatend.forEach((element) {
+              end_ayat.add(element["ayat"].toString());
+            });
+            init_end_ayat = end_ayat.first;
+          }
+        }
+      } else {
+        start_pasal.clear();
+        end_pasal.clear();
+        start_ayat.clear();
+        end_ayat.clear();
+        var temppasal =
+            (_items.where((pasal) => (pasal["kitab_singkat"] == kitab.first)));
+        temppasal.forEach((element) {
+          start_pasal.add(element["pasal"].toString());
+          end_pasal.add(element["pasal"].toString());
+        });
+        var tempayat = (temppasal.where((ayat) => (ayat["pasal"] == 1)));
+        tempayat.forEach((element) {
+          start_ayat.add(element["ayat"].toString());
+          end_ayat.add(element["ayat"].toString());
+        });
+
+        init_start_kitab = kitab.first;
+        init_start_pasal = start_pasal.elementAt(0).toString();
+        init_start_ayat = start_ayat.elementAt(0).toString();
+        init_end_kitab = kitab.first;
+        init_end_pasal = start_pasal.elementAt(0).toString();
+        init_end_ayat = start_ayat.elementAt(1).toString();
+      }
     });
   }
 
@@ -139,11 +224,29 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                 onPressed: (() {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (init_end_ayat == null || init_end_pasal == null) {
-                      // pop a snackbar error
+                      final sbarerror = SnackBar(
+                        content: const Text(
+                            "Mohon isi bacaan Alkitab terlebih dahulu"),
+                        action: SnackBarAction(
+                          label: 'OK',
+                          onPressed: () => ScaffoldMessenger.of(context)
+                              .hideCurrentSnackBar(),
+                        ),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(sbarerror);
                     } else {
                       if (init_end_ayat == init_start_ayat &&
                           init_end_pasal == init_start_pasal) {
-                        // pop a snackbar error
+                        final sbarerror = SnackBar(
+                          content: const Text(
+                              "Mohon, memilih bacaan Alkitab lebih dari 1 ayat"),
+                          action: SnackBarAction(
+                            label: 'OK',
+                            onPressed: () => ScaffoldMessenger.of(context)
+                                .hideCurrentSnackBar(),
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(sbarerror);
                       } else {
                         int starti = 0;
                         int endi = 0;
@@ -166,6 +269,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     startindex: starti,
                                     endindex: endi,
                                     isnew: true,
+                                    isnewabsen: widget.isnewabsen,
                                     datenote: formattedDate,
                                     leaderstatus: widget.leaderstatus,
                                   )),
@@ -251,8 +355,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             value: devotioncheck,
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (newvalue) {
-                              devotioncheck = newvalue!;
-                              setState(() {});
+                              setState(() {
+                                devotioncheck = newvalue!;
+                              });
                             },
                           ),
                           Container(
@@ -351,12 +456,12 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                     alignment: AlignmentDirectional.center,
                     children: [
                       Container(
-                        height: MediaQuery.of(context).size.height - 670 - 45,
+                        height: MediaQuery.of(context).size.height - 670 - 50,
                         width: MediaQuery.of(context).size.width,
                         padding: EdgeInsets.only(
                           left: 10,
                           right: 10,
-                          bottom: 20,
+                          bottom: 5,
                           top: 0,
                         ),
                         margin: EdgeInsets.only(top: 0),
@@ -484,6 +589,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     visualDensity: VisualDensity.compact,
                                     groupValue: _reading,
                                     onChanged: (value) {
+                                      customselect = true;
                                       _reading = value;
                                     },
                                   ),
@@ -497,7 +603,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         //cover
 
                         height: devotioncheck
-                            ? MediaQuery.of(context).size.height - 670 - 45
+                            ? MediaQuery.of(context).size.height - 670 - 50
                             : 0,
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.5),
@@ -532,6 +638,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             // kitab
                             value: init_start_kitab,
                             hint: Text(""),
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
                             isDense: true,
@@ -539,93 +649,133 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                 .map((items) {
                                   return DropdownMenuItem(
                                     value: items,
-                                    child: Text(items),
+                                    child: SizedBox(
+                                        width: 37,
+                                        child: Text(items,
+                                            textAlign: TextAlign.center)),
                                   );
                                 })
                                 .toSet()
                                 .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                //setting start pasal list
-                                start_pasal.clear();
-                                end_pasal.clear();
-                                start_ayat.clear();
-                                end_ayat.clear();
-                                var temppasal = (_items.where((pasal) =>
-                                    (pasal["kitab_singkat"] == value)));
-                                temppasal.forEach((element) {
-                                  start_pasal.add(element["pasal"].toString());
-                                  end_pasal.add(element["pasal"].toString());
-                                });
-                                var tempayat = (temppasal
-                                    .where((ayat) => (ayat["pasal"] == 1)));
-                                tempayat.forEach((element) {
-                                  start_ayat.add(element["ayat"].toString());
-                                  end_ayat.add(element["ayat"].toString());
-                                });
+                            onChanged: customselect
+                                ? (value) {
+                                    setState(() {
+                                      //setting start pasal list
+                                      start_pasal.clear();
+                                      end_pasal.clear();
+                                      start_ayat.clear();
+                                      end_ayat.clear();
+                                      var temppasal = (_items.where((pasal) =>
+                                          (pasal["kitab_singkat"] == value)));
+                                      temppasal.forEach((element) {
+                                        start_pasal
+                                            .add(element["pasal"].toString());
+                                        end_pasal
+                                            .add(element["pasal"].toString());
+                                      });
+                                      var tempayat = (temppasal.where(
+                                          (ayat) => (ayat["pasal"] == 1)));
+                                      tempayat.forEach((element) {
+                                        start_ayat
+                                            .add(element["ayat"].toString());
+                                        end_ayat
+                                            .add(element["ayat"].toString());
+                                      });
 
-                                init_start_kitab = value.toString();
-                                init_start_pasal =
-                                    start_pasal.elementAt(0).toString();
-                                init_start_ayat =
-                                    start_ayat.elementAt(0).toString();
-                                init_end_kitab = value.toString();
-                                init_end_pasal =
-                                    start_pasal.elementAt(0).toString();
-                                init_end_ayat =
-                                    start_ayat.elementAt(1).toString();
-                              });
-                            }),
+                                      init_start_kitab = value.toString();
+                                      init_start_pasal =
+                                          start_pasal.elementAt(0).toString();
+                                      init_start_ayat =
+                                          start_ayat.elementAt(0).toString();
+                                      init_end_kitab = value.toString();
+                                      init_end_pasal =
+                                          start_pasal.elementAt(0).toString();
+                                      init_end_ayat =
+                                          start_ayat.elementAt(1).toString();
+                                    });
+                                  }
+                                : null),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(right: 7.0),
+                        padding: const EdgeInsets.only(right: 2.0),
                         child: DropdownButton(
                             // pasal
                             value: init_start_pasal,
                             hint: Text(""),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             isDense: true,
                             items: start_pasal.map((items) {
                               return DropdownMenuItem(
                                 value: items,
                                 child: SizedBox(
-                                    width: 30,
+                                    width: 20,
                                     child: Text(items,
                                         textAlign: TextAlign.center)),
                               );
                             }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                //reset list ayat
-                                start_ayat.clear();
-                                end_ayat.clear();
-                                var tempayat = (_items.where((ayat) =>
-                                    (ayat["pasal"] ==
-                                            int.parse(value as String) &&
-                                        ayat["kitab_singkat"] ==
-                                            init_start_kitab)));
-                                tempayat.forEach((element) {
-                                  start_ayat.add(element["ayat"].toString());
-                                  end_ayat.add(element["ayat"].toString());
-                                });
+                            onChanged: customselect
+                                ? (value) {
+                                    if (init_start_kitab == init_end_kitab) {
+                                      setState(() {
+                                        //reset list ayat
+                                        start_ayat.clear();
+                                        end_ayat.clear();
+                                        var tempayat = (_items.where((ayat) =>
+                                            (ayat["pasal"] ==
+                                                    int.parse(
+                                                        value as String) &&
+                                                ayat["kitab_singkat"] ==
+                                                    init_start_kitab)));
+                                        tempayat.forEach((element) {
+                                          start_ayat
+                                              .add(element["ayat"].toString());
+                                          end_ayat
+                                              .add(element["ayat"].toString());
+                                        });
 
-                                init_start_pasal = value.toString();
-                                init_end_pasal = value.toString();
+                                        init_start_pasal = value.toString();
+                                        init_end_pasal = value.toString();
 
-                                init_start_ayat =
-                                    start_ayat.elementAt(0).toString();
-                                init_end_ayat =
-                                    start_ayat.elementAt(1).toString();
-                              });
-                            }),
+                                        init_start_ayat =
+                                            start_ayat.elementAt(0).toString();
+                                        init_end_ayat =
+                                            start_ayat.elementAt(1).toString();
+                                      });
+                                    } else {
+                                      setState(() {
+                                        start_ayat.clear();
+
+                                        var tempayat = (_items.where((ayat) =>
+                                            (ayat["pasal"] ==
+                                                    int.parse(
+                                                        value as String) &&
+                                                ayat["kitab_singkat"] ==
+                                                    init_start_kitab)));
+                                        tempayat.forEach((element) {
+                                          start_ayat
+                                              .add(element["ayat"].toString());
+                                        });
+
+                                        init_start_pasal = value.toString();
+
+                                        init_start_ayat =
+                                            start_ayat.elementAt(0).toString();
+                                      });
+                                    }
+                                  }
+                                : null),
                       ),
                       Container(
                         child: Text(" : "),
-                        padding: EdgeInsets.only(right: 7),
+                        padding: EdgeInsets.only(right: 2),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
+                        padding: const EdgeInsets.only(right: 5.0),
                         child: DropdownButton(
 
                             // ayat
@@ -633,46 +783,92 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             hint: Text(""),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             isDense: true,
                             items: start_ayat.map((items) {
                               return DropdownMenuItem(
                                 value: items,
-                                child: Text(items),
+                                child: SizedBox(
+                                    width: 20,
+                                    child: Text(
+                                      items,
+                                      textAlign: TextAlign.center,
+                                    )),
                               );
                             }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                init_start_ayat = value.toString();
+                            onChanged: customselect
+                                ? (value) {
+                                    setState(() {
+                                      init_start_ayat = value.toString();
 
-                                if (init_start_pasal == init_end_pasal) {
-                                  if (value == start_ayat.last.toString()) {
-                                    init_end_pasal =
-                                        (int.parse(init_start_pasal as String) +
-                                                1)
-                                            .toString();
+                                      if (init_start_pasal == init_end_pasal) {
+                                        if (value.toString() ==
+                                            start_ayat.last.toString()) {
+                                          if (init_start_pasal ==
+                                              start_pasal.last.toString()) {
+                                            int indexkitab = (kitab.toList())
+                                                .indexOf(init_start_kitab);
+                                            end_pasal.clear();
+                                            end_ayat.clear();
+                                            var tempasal = (_items.where(
+                                                (kit) =>
+                                                    (kit["kitab_singkat"] ==
+                                                        kitab.elementAt(
+                                                            indexkitab + 1))));
+                                            init_end_kitab =
+                                                tempasal.first["kitab_singkat"];
+                                            tempasal.forEach((element) {
+                                              end_pasal.add(
+                                                  element["pasal"].toString());
+                                            });
+                                            init_end_pasal =
+                                                end_pasal.first.toString();
+                                            var tempayat = (tempasal.where(
+                                                (ayat) =>
+                                                    (ayat["pasal"] == 1)));
+                                            tempayat.forEach((element) {
+                                              end_ayat.add(
+                                                  element["ayat"].toString());
+                                            });
+                                            init_end_ayat =
+                                                end_ayat.first.toString();
+                                          } else {
+                                            init_end_pasal = (int.parse(
+                                                        init_start_pasal
+                                                            as String) +
+                                                    1)
+                                                .toString();
 
-                                    end_ayat.clear();
+                                            end_ayat.clear();
 
-                                    var tempayat = (_items.where((ayat) =>
-                                        (ayat["pasal"] ==
-                                                int.parse(
-                                                    init_end_pasal as String) &&
-                                            ayat["kitab_singkat"] ==
-                                                init_start_kitab)));
-                                    tempayat.forEach((element) {
-                                      end_ayat.add(element["ayat"].toString());
+                                            var tempayat = (_items.where(
+                                                (ayat) => (ayat["pasal"] ==
+                                                        int.parse(init_end_pasal
+                                                            as String) &&
+                                                    ayat["kitab_singkat"] ==
+                                                        init_start_kitab)));
+                                            tempayat.forEach((element) {
+                                              end_ayat.add(
+                                                  element["ayat"].toString());
+                                            });
+                                            init_end_ayat =
+                                                end_ayat.first.toString();
+                                          }
+                                        } else {
+                                          init_end_ayat =
+                                              (int.parse(value as String) + 1)
+                                                  .toString();
+                                        }
+                                      }
                                     });
-                                  } else {
-                                    init_end_ayat =
-                                        (int.parse(value as String) + 1)
-                                            .toString();
                                   }
-                                }
-                              });
-                            }),
+                                : null),
                       ),
                       Padding(
-                        padding: EdgeInsets.only(right: 10.0),
+                        padding: EdgeInsets.only(right: 5.0),
                         child: Text(" - "),
                       ),
                       // selesai
@@ -684,138 +880,175 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             hint: Text(""),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             isDense: true,
                             items: kitab
                                 .map((items) {
                                   return DropdownMenuItem(
                                     value: items,
-                                    child: Text(items),
+                                    child: SizedBox(
+                                        width: 37,
+                                        child: Text(items,
+                                            textAlign: TextAlign.center)),
                                   );
                                 })
                                 .toSet()
                                 .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                int indexmulai;
-                                int indexakhir;
-                                List tempkitab = kitab.toList();
-                                indexmulai =
-                                    tempkitab.indexOf(init_start_kitab);
-                                indexakhir =
-                                    tempkitab.indexOf(value.toString());
-                                if (indexakhir < indexmulai) {
-                                  final sbarerror = SnackBar(
-                                    content: const Text(
-                                        "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                    action: SnackBarAction(
-                                      label: 'OK',
-                                      onPressed: () =>
-                                          ScaffoldMessenger.of(context)
-                                              .hideCurrentSnackBar(),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(sbarerror);
-                                } else {
-                                  end_pasal.clear();
-                                  end_ayat.clear();
+                            onChanged: customselect
+                                ? (value) {
+                                    setState(() {
+                                      int indexmulai;
+                                      int indexakhir;
+                                      List tempkitab = kitab.toList();
+                                      indexmulai =
+                                          tempkitab.indexOf(init_start_kitab);
+                                      indexakhir =
+                                          tempkitab.indexOf(value.toString());
+                                      if (indexakhir < indexmulai) {
+                                        final sbarerror = SnackBar(
+                                          content: const Text(
+                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
+                                          action: SnackBarAction(
+                                            label: 'OK',
+                                            onPressed: () =>
+                                                ScaffoldMessenger.of(context)
+                                                    .hideCurrentSnackBar(),
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(sbarerror);
+                                      } else {
+                                        end_pasal.clear();
+                                        end_ayat.clear();
 
-                                  var temppasal = (_items.where((pasal) =>
-                                      (pasal["kitab_singkat"] == value)));
-                                  temppasal.forEach((element) {
-                                    start_pasal
-                                        .add(element["pasal"].toString());
-                                    end_pasal.add(element["pasal"].toString());
-                                  });
-                                  var tempayat = (temppasal
-                                      .where((ayat) => (ayat["pasal"] == 1)));
-                                  tempayat.forEach((element) {
-                                    start_ayat.add(element["ayat"].toString());
-                                    end_ayat.add(element["ayat"].toString());
-                                  });
+                                        var temppasal = (_items.where((pasal) =>
+                                            (pasal["kitab_singkat"] == value)));
+                                        temppasal.forEach((element) {
+                                          start_pasal
+                                              .add(element["pasal"].toString());
+                                          end_pasal
+                                              .add(element["pasal"].toString());
+                                        });
+                                        var tempayat = (temppasal.where(
+                                            (ayat) => (ayat["pasal"] == 1)));
+                                        tempayat.forEach((element) {
+                                          start_ayat
+                                              .add(element["ayat"].toString());
+                                          end_ayat
+                                              .add(element["ayat"].toString());
+                                        });
 
-                                  init_end_kitab = value.toString();
-                                  init_end_pasal =
-                                      end_pasal.elementAt(0).toString();
-                                  init_end_ayat =
-                                      end_ayat.elementAt(0).toString();
-                                }
-                              });
-                            }),
+                                        init_end_kitab = value.toString();
+                                        init_end_pasal =
+                                            start_pasal.elementAt(0).toString();
+                                        init_end_ayat =
+                                            start_ayat.elementAt(1).toString();
+                                      }
+                                    });
+                                  }
+                                : null),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(right: 7.0),
+                        padding: const EdgeInsets.only(right: 2.0),
                         child: DropdownButton(
                             // pasal
                             value: init_end_pasal,
                             hint: Text(""),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             isDense: true,
                             items: end_pasal.map((items) {
                               return DropdownMenuItem(
                                 value: items,
                                 child: SizedBox(
-                                    width: 30,
+                                    width: 20,
                                     child: Text(
                                       items,
                                       textAlign: TextAlign.center,
                                     )),
                               );
                             }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                var indexmulai;
-                                var indexakhir;
-                                indexmulai = _items.singleWhere((element) =>
-                                    element["pasal"] ==
-                                        int.parse(init_start_pasal as String) &&
-                                    element["kitab_singkat"] ==
-                                        init_start_kitab &&
-                                    element["ayat"] ==
-                                        int.parse(init_start_ayat as String));
-                                indexakhir = _items.singleWhere((element) =>
-                                    element["pasal"] ==
-                                        int.parse(value as String) &&
-                                    element["kitab_singkat"] ==
-                                        init_end_kitab &&
-                                    element["ayat"] == 1);
+                            onChanged: customselect
+                                ? (value) {
+                                    setState(() {
+                                      var indexmulai;
+                                      var indexakhir;
+                                      indexmulai = _items.singleWhere(
+                                          (element) =>
+                                              element["pasal"] ==
+                                                  int.parse(init_start_pasal
+                                                      as String) &&
+                                              element["kitab_singkat"] ==
+                                                  init_start_kitab.toString() &&
+                                              element["ayat"] ==
+                                                  int.parse(init_start_ayat
+                                                      as String));
+                                      indexakhir = _items.singleWhere(
+                                          (element) =>
+                                              element["pasal"] ==
+                                                  int.parse(value as String) &&
+                                              element["kitab_singkat"] ==
+                                                  init_end_kitab &&
+                                              element["ayat"] ==
+                                                  int.parse(
+                                                      init_end_ayat as String));
 
-                                if (indexakhir["id"] < indexmulai["id"]) {
-                                  final sbarerror = SnackBar(
-                                    content: const Text(
-                                        "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                    action: SnackBarAction(
-                                      label: 'OK',
-                                      onPressed: () =>
-                                          ScaffoldMessenger.of(context)
-                                              .hideCurrentSnackBar(),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(sbarerror);
-                                } else {
-                                  end_ayat.clear();
-                                  var tempayat = (_items.where((ayat) =>
-                                      (ayat["pasal"] ==
-                                              int.parse(value as String) &&
-                                          ayat["kitab_singkat"] ==
-                                              init_end_kitab)));
-                                  tempayat.forEach((element) {
-                                    end_ayat.add(element["ayat"].toString());
-                                  });
+                                      if (indexakhir["pasal"] <
+                                          indexmulai["pasal"]) {
+                                        final sbarerror = SnackBar(
+                                          content: const Text(
+                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
+                                          action: SnackBarAction(
+                                            label: 'OK',
+                                            onPressed: () =>
+                                                ScaffoldMessenger.of(context)
+                                                    .hideCurrentSnackBar(),
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(sbarerror);
+                                      } else if (indexakhir["pasal"] ==
+                                          indexmulai["pasal"]) {
+                                        end_ayat.clear();
+                                        end_ayat.addAll(start_ayat);
+                                        init_end_pasal = value.toString();
 
-                                  init_end_pasal = value.toString();
+                                        init_end_ayat = (int.parse(
+                                                    init_start_ayat as String) +
+                                                1)
+                                            .toString();
+                                      } else {
+                                        end_ayat.clear();
+                                        var tempayat = (_items.where((ayat) =>
+                                            (ayat["pasal"] ==
+                                                    int.parse(
+                                                        value as String) &&
+                                                ayat["kitab_singkat"] ==
+                                                    init_end_kitab)));
+                                        tempayat.forEach((element) {
+                                          end_ayat
+                                              .add(element["ayat"].toString());
+                                        });
 
-                                  init_end_ayat =
-                                      end_ayat.elementAt(0).toString();
-                                }
-                              });
-                            }),
+                                        init_end_pasal = value.toString();
+
+                                        init_end_ayat =
+                                            end_ayat.elementAt(0).toString();
+                                      }
+                                    });
+                                  }
+                                : null),
                       ),
                       Container(
                         child: Text(" : "),
-                        padding: EdgeInsets.only(right: 7),
+                        padding: EdgeInsets.only(right: 2),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(right: 10.0),
@@ -826,50 +1059,66 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             hint: Text(""),
                             icon: const Icon(Icons.keyboard_arrow_down),
                             iconSize: 0.0,
+                            underline: Container(
+                              height: 1.5,
+                              color: Colors.blueGrey[200],
+                            ),
                             isDense: true,
                             items: end_ayat.map((items) {
                               return DropdownMenuItem(
                                 value: items,
-                                child: Text(items),
+                                child: SizedBox(
+                                    width: 20,
+                                    child: Text(
+                                      items,
+                                      textAlign: TextAlign.center,
+                                    )),
                               );
                             }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                var indexmulai;
-                                var indexakhir;
-                                indexmulai = _items.singleWhere((element) =>
-                                    element["pasal"] ==
-                                        int.parse(init_start_pasal as String) &&
-                                    element["kitab_singkat"] ==
-                                        init_start_kitab &&
-                                    element["ayat"] ==
-                                        int.parse(init_start_ayat as String));
-                                indexakhir = _items.singleWhere((element) =>
-                                    element["pasal"] ==
-                                        int.parse(init_end_pasal as String) &&
-                                    element["kitab_singkat"] ==
-                                        init_end_kitab &&
-                                    element["ayat"] ==
-                                        int.parse(value as String));
+                            onChanged: customselect
+                                ? (value) {
+                                    setState(() {
+                                      var indexmulai;
+                                      var indexakhir;
+                                      indexmulai = _items.singleWhere(
+                                          (element) =>
+                                              element["pasal"] ==
+                                                  int.parse(init_start_pasal
+                                                      as String) &&
+                                              element["kitab_singkat"] ==
+                                                  init_start_kitab &&
+                                              element["ayat"] ==
+                                                  int.parse(init_start_ayat
+                                                      as String));
+                                      indexakhir = _items.singleWhere(
+                                          (element) =>
+                                              element["pasal"] ==
+                                                  int.parse(init_end_pasal
+                                                      as String) &&
+                                              element["kitab_singkat"] ==
+                                                  init_end_kitab &&
+                                              element["ayat"] ==
+                                                  int.parse(value as String));
 
-                                if (indexakhir["id"] < indexmulai["id"]) {
-                                  final sbarerror = SnackBar(
-                                    content: const Text(
-                                        "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                    action: SnackBarAction(
-                                      label: 'OK',
-                                      onPressed: () =>
-                                          ScaffoldMessenger.of(context)
-                                              .hideCurrentSnackBar(),
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(sbarerror);
-                                } else {
-                                  init_end_ayat = value.toString();
-                                }
-                              });
-                            }),
+                                      if (indexakhir["id"] < indexmulai["id"]) {
+                                        final sbarerror = SnackBar(
+                                          content: const Text(
+                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
+                                          action: SnackBarAction(
+                                            label: 'OK',
+                                            onPressed: () =>
+                                                ScaffoldMessenger.of(context)
+                                                    .hideCurrentSnackBar(),
+                                          ),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(sbarerror);
+                                      } else {
+                                        init_end_ayat = value.toString();
+                                      }
+                                    });
+                                  }
+                                : null),
                       ),
                     ],
                   ),

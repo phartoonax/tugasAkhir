@@ -22,6 +22,7 @@ dependencies:
   flutter_slidable: ^2.0.0
   firebase_core: ^2.4.0
   firebase_messaging: ^14.2.0
+  upgrader: ^5.0.0
 
 
 dev_dependencies:
@@ -33,3 +34,7 @@ flutter:
   uses-material-design: true
   assets: 
   - assets/
+
+flutter_icons:
+  image_path_android: "assets/android/play_store_512.png"
+  android: true

@@ -8,6 +8,7 @@ import 'new_notes_init.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'notes_detail.dart';
+import 'package:upgrader/upgrader.dart';
 
 const String SERVER_URL = "https://eu-api.backendless.com";
 const String APPLICATION_ID = "A5B771C1-B135-1146-FFC2-204701E95500";
@@ -25,8 +26,9 @@ class MainScreen extends StatefulWidget {
 String namas = "";
 String ids = "";
 List<Map> listnote = List<Map>.empty(growable: true);
+List<Map> listabsen = List<Map>.empty(growable: true);
 
-List _items = [];
+List _items = []; //for the alkitab
 
 bool notesstatus = false;
 
@@ -82,6 +84,33 @@ class _MainScreenState extends State<MainScreen> {
 
         setState(() {});
       });
+      //search date, pull data absensi
+      var dateforcomp = DateTime.now();
+
+      for (int i = 0; i <= 6; i++) {
+        if ((dateforcomp.subtract(Duration(days: i))).weekday ==
+            DateTime.monday) {
+          var dates = (dateforcomp.subtract(Duration(days: i)));
+          searchnotes
+            ..whereClause =
+                "ownerId = '$currentUserObjectId' && created at or after '" +
+                    dates.month.toString() +
+                    "-" +
+                    dates.day.toString() +
+                    "-" +
+                    dates.year.toString() +
+                    "'"
+            ..sortBy = ["created"];
+        }
+      }
+      Backendless.data.of('Absensi').find(searchnotes).then((foundabsen) {
+        listabsen.clear();
+        listabsen.addAll(foundabsen!.cast<Map>());
+        notesstatus = true;
+        print("List Absen: " + listabsen.toString());
+        setState(() {});
+      });
+
       setState(() {});
     });
     setState(() {});
@@ -105,6 +134,7 @@ class _MainScreenState extends State<MainScreen> {
         id: ids,
         notes: listnote,
         statusnotesload: notesstatus,
+        absen: listabsen,
       ),
       AlarmScreen(),
       null,
@@ -113,64 +143,80 @@ class _MainScreenState extends State<MainScreen> {
       ),
       AlarmScreen(),
     ];
-    return Scaffold(
-      body: RefreshIndicator(
-          onRefresh: loadnotes,
-          child: Container(child: screens[_selectedIndex])),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => NewNotesinitPage(
-                        leaderstatus: leadstatus,
-                      )),
-            ).then((value) {
-              loadnotes();
-              setState(() {});
+    return UpgradeAlert(
+      child: Scaffold(
+        body: RefreshIndicator(
+            onRefresh: loadnotes,
+            child: Container(child: screens[_selectedIndex])),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              bool deciderabsen;
+              if ((listabsen.last['created'] as DateTime).weekday ==
+                  dates.weekday) {
+                deciderabsen = false;
+              } else {
+                deciderabsen = true;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => listnote.isEmpty
+                        ? NewNotesinitPage(
+                            leaderstatus: leadstatus,
+                            isnewabsen: true,
+                          )
+                        : NewNotesinitPage(
+                            leaderstatus: leadstatus,
+                            isnewabsen: deciderabsen,
+                            lastreading: listnote.first,
+                          )),
+              ).then((value) {
+                loadnotes();
+                setState(() {});
+              });
             });
-          });
-        },
-        child: Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Theme(
-        data: ThemeData(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
+          },
+          child: Icon(Icons.add),
         ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          elevation: 20.0,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark_border),
-              label: 'Devotions',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.alarm),
-              label: 'Reminder',
-            ),
-            BottomNavigationBarItem(
-              backgroundColor: Colors.white,
-              icon: const SizedBox.shrink(),
-              label: "",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people),
-              label: 'Leadership',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.face),
-              label: 'Profile',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Color(0xffF04F2C),
-          unselectedItemColor: Colors.black,
-          onTap: _onItemTapped,
-          enableFeedback: false,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: Theme(
+          data: ThemeData(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            elevation: 20.0,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bookmark_border),
+                label: 'Devotions',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.alarm),
+                label: 'Reminder',
+              ),
+              BottomNavigationBarItem(
+                backgroundColor: Colors.white,
+                icon: const SizedBox.shrink(),
+                label: "",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people),
+                label: 'Leadership',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.face),
+                label: 'Profile',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: Color(0xffF04F2C),
+            unselectedItemColor: Colors.black,
+            onTap: _onItemTapped,
+            enableFeedback: false,
+          ),
         ),
       ),
     );
@@ -209,6 +255,7 @@ class ContentMain extends StatefulWidget {
   final String name;
   final String id;
   final List<Map>? notes;
+  final List<Map>? absen;
   final bool statusnotesload;
   const ContentMain({
     Key? key,
@@ -216,11 +263,15 @@ class ContentMain extends StatefulWidget {
     required this.name,
     required this.notes,
     required this.statusnotesload,
+    required this.absen,
   }) : super(key: key);
 
   @override
   State<ContentMain> createState() => _ContentMainState();
 }
+
+List<bool> confirmabsen = List<bool>.empty(growable: true);
+DateTime dates = DateTime.now();
 
 class _ContentMainState extends State<ContentMain> {
   @override
@@ -243,6 +294,8 @@ class _ContentMainState extends State<ContentMain> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
+                    padding: EdgeInsets.only(
+                        top: 10, left: 10, right: 10, bottom: 5),
                     child: widget.name == ""
                         ? Center(
                             child: SizedBox(
@@ -259,13 +312,6 @@ class _ContentMainState extends State<ContentMain> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                  ),
-                  Container(
-                    //lang switcher
-                    padding: EdgeInsets.only(
-                      top: 5.0,
-                    ),
-                    child: SwitchExample(),
                   ),
                 ],
               ),
@@ -336,12 +382,55 @@ class _ContentMainState extends State<ContentMain> {
                     child: IconButton(
                       padding: EdgeInsets.all(0),
                       onPressed: () {
+                        confirmabsen.clear();
+                        bool checkabsen = false;
+                        int indexfordb = 0;
+
+                        for (int i = 0; i <= 6; i++) {
+                          if ((DateTime.now().subtract(Duration(days: i)))
+                                  .weekday ==
+                              DateTime.monday) {
+                            dates = (DateTime.now().subtract(
+                                Duration(days: i))); //searching for monday
+                          }
+                        }
+                        int intforcheckindex = widget.absen!.isNotEmpty
+                            ? (widget.absen!.last['created'] as DateTime).day -
+                                dates.day +
+                                1
+                            : 1;
+                        for (int i = 0; i < intforcheckindex; i++) {
+                          if (widget.absen!.isNotEmpty) {
+                            if ((dates.add(Duration(days: i))).day ==
+                                (widget.absen![indexfordb]['created']
+                                        as DateTime)
+                                    .day) {
+                              indexfordb++;
+                              confirmabsen.add(true);
+                            } else {
+                              confirmabsen.add(false);
+                            }
+                          } else {
+                            confirmabsen.add(false);
+                          }
+                        }
+                        int leng = confirmabsen.length;
+                        for (int j = 1; j <= 7 - leng; j++) {
+                          confirmabsen.add(false);
+                        }
+                        if (widget.absen!.isNotEmpty) {
+                          if ((widget.absen!.last['created'] as DateTime).day ==
+                              DateTime.now().day) {
+                            checkabsen = true;
+                          }
+                        }
                         showDialog(
                             context: context,
                             builder: (BuildContext context) => CustomDialog(
                                   name: widget.name,
-                                  checkined: false,
-                                  numberofcheckinweek: 4,
+                                  checkined: checkabsen,
+                                  numberofcheckinweek: widget.absen!.length,
+                                  absen: confirmabsen,
                                 ));
                       },
                       icon: Image.asset(
@@ -380,7 +469,7 @@ class _ContentMainState extends State<ContentMain> {
             _items[awal]["pasal"].toString() +
             ":" +
             _items[awal]["ayat"].toString() +
-            "-" +
+            " - " +
             _items[akhir]["ayat"].toString());
       } else {
         return Text(_items[awal]["kitab_singkat"] +
@@ -388,7 +477,7 @@ class _ContentMainState extends State<ContentMain> {
             _items[awal]["pasal"].toString() +
             ":" +
             _items[awal]["ayat"].toString() +
-            "-" +
+            " - " +
             _items[akhir]["pasal"].toString() +
             ":" +
             _items[akhir]["ayat"].toString());
@@ -400,7 +489,7 @@ class _ContentMainState extends State<ContentMain> {
           _items[awal]["pasal"].toString() +
           ":" +
           _items[awal]["ayat"].toString() +
-          "-" +
+          " - " +
           _items[akhir]["kitab_singkat"] +
           " " +
           _items[akhir]["pasal"].toString() +
@@ -473,8 +562,8 @@ class _ContentMainState extends State<ContentMain> {
                     child: Text(widget.notes![index]['judul_catatan']),
                   ),
                   subtitle: readrangechecker(
-                      widget.notes![index]['idstartkitab'],
-                      widget.notes![index]['idendkitab']),
+                      widget.notes![index]['idstartkitab'] - 1,
+                      widget.notes![index]['idendkitab'] - 1),
                   dense: false,
                   trailing: Text(formattedDate),
                   onTap: () {
@@ -487,6 +576,7 @@ class _ContentMainState extends State<ContentMain> {
                                   startindex: widget.notes![index]
                                       ['idstartkitab'],
                                   isnew: false,
+                                  isnewabsen: false,
                                   idrecommend: widget.notes![index],
                                   datenote: formattedDate,
                                   leaderstatus: leadstatus,
@@ -506,17 +596,21 @@ class _ContentMainState extends State<ContentMain> {
 
 class CustomDialog extends StatefulWidget {
   final String name;
-  bool checkined;
-  int numberofcheckinweek;
+  final bool checkined;
+  final int numberofcheckinweek;
+  final List<bool>? absen;
 
   CustomDialog(
       {super.key,
       required this.name,
       required this.checkined,
-      required this.numberofcheckinweek});
+      required this.numberofcheckinweek,
+      required this.absen});
   @override
   State<CustomDialog> createState() => _CustomDialogState();
 }
+
+var dateday = DateTime.now().weekday;
 
 class _CustomDialogState extends State<CustomDialog> {
   @override
@@ -527,6 +621,30 @@ class _CustomDialogState extends State<CustomDialog> {
       backgroundColor: Colors.transparent,
       child: dialogContent(context),
     );
+  }
+
+  Icon iconsearcher(int i) {
+    if (widget.absen![i - 1] == true) {
+      return Icon(
+        Icons.hotel_class,
+        color: Colors.green[700],
+        size: 40,
+      );
+    } else {
+      if (dateday == i) {
+        return Icon(
+          Icons.star_half,
+          color: Colors.amber,
+          size: 40,
+        );
+      } else {
+        return Icon(
+          Icons.hotel_class,
+          color: Colors.blueGrey[300],
+          size: 40,
+        );
+      }
+    }
   }
 
   Widget dialogContent(BuildContext context) {
@@ -573,13 +691,109 @@ class _CustomDialogState extends State<CustomDialog> {
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.all(7),
-                      child: Text(
-                          widget.checkined
-                              ? "Anda sudah melakukan absen pada hari ini! Dalam minggu ini, anda telah melakukan $checkcount sesi Saat Teduh! Mari lakukan lebih lagi Besok!"
-                              : "Mari melakukan absen pada hari ini untuk merekam hasil anda hari ini! Dalam minggu ini, anda telah melakukan $checkcount sesi Saat Teduh!",
-                          style:
-                              TextStyle(fontSize: 14.0, color: Colors.black)),
+                        padding: EdgeInsets.all(7),
+                        child: RichText(
+                          text: TextSpan(
+                              children: widget.checkined
+                                  ? [
+                                      TextSpan(
+                                          text:
+                                              "Anda sudah melakukan absen pada hari ini! Dalam minggu ini, anda telah melakukan ",
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black)),
+                                      TextSpan(
+                                          text: checkcount.toString(),
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold)),
+                                      TextSpan(
+                                          text:
+                                              " sesi Saat Teduh! Mari lakukan lebih lagi Besok!",
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black)),
+                                    ]
+                                  : [
+                                      TextSpan(
+                                          text:
+                                              "Mari melakukan absen pada hari ini untuk merekam hasil Saat Teduh anda! Dalam minggu ini, anda telah melakukan ",
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black)),
+                                      TextSpan(
+                                          text: checkcount.toString(),
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold)),
+                                      TextSpan(
+                                          text: " sesi Saat Teduh!",
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.black)),
+                                    ]),
+                        )),
+                    Center(
+                      child: Container(
+                        alignment: AlignmentDirectional.center,
+
+                        padding: EdgeInsets.all(20),
+                        // tempat absen visual
+                        //TODO REPLACE ICON WITH DATA FROM DB
+                        child: Column(
+                          children: [
+                            Container(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                // top
+                                children: [
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Sen."), iconsearcher(1)],
+                                  )),
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Sel."), iconsearcher(2)],
+                                  )),
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Rab."), iconsearcher(3)],
+                                  )),
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Kam."), iconsearcher(4)],
+                                  )),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                // bottom
+                                children: [
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Jum."), iconsearcher(5)],
+                                  )),
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Sab."), iconsearcher(6)],
+                                  )),
+                                  Container(
+                                      child: Column(
+                                    children: [Text("Min."), iconsearcher(7)],
+                                  )),
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
                     )
                   ],
                 ) //
@@ -603,12 +817,34 @@ class _CustomDialogState extends State<CustomDialog> {
                       ),
                     ),
                   ),
-                  onTap: () {
-                    widget.checkined = true;
-                    widget.numberofcheckinweek++;
-                    // Navigator.pop(context);
-                    setState(() {});
-                  },
+                  onTap: widget.checkined
+                      ? () {}
+                      : () {
+                          final sbarnoticeabsen = SnackBar(
+                            duration: Duration(seconds: 10),
+                            content: const Text(
+                                "Mulai Absen dengan melakukan saat teduh pribadi terlebih dahulu!"),
+                            action: SnackBarAction(
+                              label: 'OK',
+                              onPressed: () => ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar(),
+                            ),
+                          );
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(sbarnoticeabsen);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => NewNotesinitPage(
+                                        isnewabsen: true,
+                                        leaderstatus: leadstatus,
+                                      )),
+                            ).then((value) {
+                              setState(() {});
+                            });
+                          });
+                        },
                 ),
                 SizedBox(height: 24.0),
               ],

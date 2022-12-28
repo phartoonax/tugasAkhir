@@ -15,10 +15,12 @@ class NotesDetail extends StatefulWidget {
       required this.endindex,
       required this.datenote,
       this.idrecommend,
-      required this.leaderstatus})
+      required this.leaderstatus,
+      required this.isnewabsen})
       : super(key: key);
 
   final bool isnew;
+  final bool isnewabsen;
   final int startindex;
   final int endindex;
   final String datenote;
@@ -133,6 +135,12 @@ class _NotesDetailState extends State<NotesDetail> {
     if (widget.isnew == true) {
       Backendless.data.of("Catatan_Sate").save(notestemp).then((value) {
         print("save Status" + value.toString());
+        if (widget.isnewabsen == true) {
+          Map absentemp = {};
+          Backendless.data.of("Absensi").save(absentemp).then((value) {
+            print("absen Status" + value.toString());
+          });
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (context) => MainScreen()))
@@ -203,6 +211,7 @@ class _NotesDetailState extends State<NotesDetail> {
                         builder: (context) => NotesAlkitab(
                               datenote: widget.datenote,
                               isnew: widget.isnew,
+                              isnewabsen: widget.isnewabsen,
                               endindex: widget.endindex,
                               startindex: widget.startindex,
                               leaderstatus: widget.leaderstatus,

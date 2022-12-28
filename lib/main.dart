@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:tugas_akhir/splash.dart';
-import 'dart:developer' as dev;
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'color_schemes.g.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 ColorScheme defaultColorScheme = ColorScheme(
-  primary: Color(0xffBB86FC),
-  secondary: Color(0xff03DAC6),
+  primary: Color(0xff16182b),
+  secondary: Color(0xff1D2739),
 
   surface: Color(0xff181818),
-  background: Color(0xffffffff),
+  background: Color(0xffF1F3FD),
   error: Color(0xffCF6679),
   onPrimary: Color(0xffffffff), //font for button dll
-  onSecondary: Color(0xff000000),
+  onSecondary: Color(0xffF1F3FD),
   onSurface: Color(0xffebebeb), //border,dll
   onBackground: Color(0xfff1f1f1), //??
   onError: Color(0xff000000),
@@ -67,11 +66,9 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
         title: 'Flutter Demo',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: defaultColorScheme,
-          fontFamily: 'Inter',
-          visualDensity: VisualDensity.compact,
-        ),
+        theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+        darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+        themeMode: ThemeMode.light,
         home: const SplashScreen());
   }
 }

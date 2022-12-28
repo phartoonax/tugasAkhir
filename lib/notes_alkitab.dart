@@ -1,6 +1,5 @@
 // import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'notes_detail.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -12,12 +11,13 @@ class NotesAlkitab extends StatefulWidget {
       required this.endindex,
       required this.isnew,
       required this.datenote,
-      required this.leaderstatus})
+      required this.leaderstatus, required this.isnewabsen})
       : super(key: key);
 
   final int startindex;
   final int endindex;
   final bool isnew;
+  final bool isnewabsen;
   final String datenote;
   final bool leaderstatus;
   @override
@@ -126,7 +126,7 @@ class NotesAlkitabState extends State<NotesAlkitab>
   }
 
   int pasalcounter = 0;
-//TODO: ADD ACTUAL PASSAGE FROM DB
+
   @override
   Widget build(BuildContext context) {
     final Future<String> _calculation = Future<String>.delayed(
@@ -162,6 +162,7 @@ class NotesAlkitabState extends State<NotesAlkitab>
                                 endindex: widget.endindex,
                                 startindex: widget.startindex,
                                 isnew: widget.isnew,
+                                isnewabsen: widget.isnewabsen,
                                 datenote: widget.datenote,
                                 leaderstatus: widget.leaderstatus,
                               )),
