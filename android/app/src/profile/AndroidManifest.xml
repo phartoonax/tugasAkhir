@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.tugas_akhir">
+    package="com.example.MannaGo">
     
     <uses-permission android:name="android.permission.INTERNET"/>
     

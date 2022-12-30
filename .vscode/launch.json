@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "tugas_akhir",
+            "name": "manna_go",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "tugas_akhir (profile mode)",
+            "name": "manna_go (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "tugas_akhir (release mode)",
+            "name": "manna_go (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

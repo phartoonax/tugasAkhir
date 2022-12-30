@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:MannaGo/notes_browser.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -31,8 +32,16 @@ String formattedDate = "";
 enum Readingmode { sabda, biblestudytools, gms, custom }
 
 class _NewNotesinitPageState extends State<NewNotesinitPage> {
+  int _currentDev = 0;
+  final CarouselController _controllerDev = CarouselController();
+  int _currentSong = 0;
+  final CarouselController _controllerSong = CarouselController();
   List _items = [];
   List<Map>? _guide = List.empty(growable: true); //for devGuide
+  List<Map>? _guidedev = List.empty(growable: true); //for recomdev
+  List<Map> guidefiltereddev = List.empty(growable: true);
+  List<Map> guidefilteredsong = List.empty(growable: true);
+  List<Map>? _guidesong = List.empty(growable: true); //for recomsong
   Set kitab = Set();
   Readingmode? _reading = Readingmode.custom;
   bool recomendationcheck = false;
@@ -60,9 +69,20 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
   }
 
   void init() async {
+    DataQueryBuilder cond = DataQueryBuilder()
+      ..relationsDepth = 1
+      ..related = ["rekomendasi_genre"];
     Backendless.data.of('Rekomendasi_Genre').find().then((value) {
       itemers!.clear();
       itemers = value?.cast<Map>();
+    });
+    Backendless.data.of('Rekomendasi_Renungan').find(cond).then((value) {
+      _guidedev!.clear();
+      _guidedev = value?.cast<Map>();
+    });
+    Backendless.data.of('Rekomendasi_Lagu').find(cond).then((value) {
+      _guidesong!.clear();
+      _guidesong = value?.cast<Map>();
     });
     DataQueryBuilder querry = DataQueryBuilder()
       ..whereClause = "created > '23-Mar-2015'"
@@ -79,6 +99,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     final String response = await rootBundle.loadString('assets/tbnew.json');
     final data = await json.decode(response);
     setState(() {
+      _items.clear();
       _items = data;
       _items.forEach((e) {
         kitab.add(e["kitab_singkat"]);
@@ -165,6 +186,13 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     });
   }
 
+  List coba = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+  ];
   Set start_pasal = {
     '1',
     '2',
@@ -248,32 +276,55 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         );
                         ScaffoldMessenger.of(context).showSnackBar(sbarerror);
                       } else {
-                        int starti = 0;
-                        int endi = 0;
-                        starti = _items.singleWhere((e) =>
-                            e["kitab_singkat"] == init_start_kitab &&
-                            e["pasal"] ==
-                                int.parse(init_start_pasal as String) &&
-                            e["ayat"] ==
-                                int.parse(init_start_ayat as String))["id"];
-                        endi = _items.singleWhere((e) =>
-                            e["kitab_singkat"] == init_end_kitab &&
-                            e["pasal"] == int.parse(init_end_pasal as String) &&
-                            e["ayat"] ==
-                                int.parse(init_end_ayat as String))["id"];
+                        if (devotioncheck == true) {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => NotesBrowser(
+                                      devRec: guidefiltereddev[_currentDev])));
+                        } else {
+                          int starti = 0;
+                          int endi = 0;
+                          starti = _items.singleWhere((e) =>
+                              e["kitab_singkat"] == init_start_kitab &&
+                              e["pasal"] ==
+                                  int.parse(init_start_pasal as String) &&
+                              e["ayat"] ==
+                                  int.parse(init_start_ayat as String))["id"];
+                          endi = _items.singleWhere((e) =>
+                              e["kitab_singkat"] == init_end_kitab &&
+                              e["pasal"] ==
+                                  int.parse(init_end_pasal as String) &&
+                              e["ayat"] ==
+                                  int.parse(init_end_ayat as String))["id"];
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => NotesAlkitab(
-                                    startindex: starti,
-                                    endindex: endi,
-                                    isnew: true,
-                                    isnewabsen: widget.isnewabsen,
-                                    datenote: formattedDate,
-                                    leaderstatus: widget.leaderstatus,
-                                  )),
-                        );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => NotesAlkitab(
+                                      startindex: starti,
+                                      endindex: endi,
+                                      isnew: true,
+                                      isnewabsen: widget.isnewabsen,
+                                      datenote: formattedDate,
+                                      leaderstatus: widget.leaderstatus,
+                                    )),
+                          );
+                        }
+                        //additional if check song
+                        if (songcheck == true) {
+                          final sbarnotice = SnackBar(
+                            content: Text("lagu anda adalah " +
+                                guidefilteredsong[_currentSong]["judul_lagu"]),
+                            action: SnackBarAction(
+                              label: 'OK',
+                              onPressed: () => ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar(),
+                            ),
+                          );
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(sbarnotice);
+                        }
                       }
                     }
                     ;
@@ -298,6 +349,26 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                       recomendationcheck = newvalue!;
                       if (newvalue == true) {
                         initdropdownvalue = itemers![0]["judul_genre"];
+                        guidefiltereddev.clear();
+                        guidefilteredsong.clear();
+                        _guidedev!.forEach((element) {
+                          (element["rekomendasi_genre"] as List)
+                              .forEach((genre) {
+                            if (genre["judul_genre"] == initdropdownvalue) {
+                              guidefiltereddev.add(element);
+                            }
+                          });
+                        });
+                        _guidesong!.forEach((element) {
+                          (element["rekomendasi_genre"] as List)
+                              .forEach((genre) {
+                            if (genre["judul_genre"] == initdropdownvalue) {
+                              guidefilteredsong.add(element);
+                            }
+                          });
+                        });
+                        print("object filtered| $guidefiltereddev");
+                        print("object filtered| $guidefilteredsong");
                       } else {
                         initdropdownvalue = null;
                       }
@@ -379,15 +450,113 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                   )
                                 ]),
                             child: devotioncheck
-                                ? ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: 5,
-                                    separatorBuilder: (context, index) =>
-                                        const Divider(),
-                                    itemBuilder: (context, index) => Card(
-                                        child: Expanded(
-                                      child: Text("Placeholder"),
-                                    )),
+                                ? Column(
+                                    children: [
+                                      Container(
+                                        height: 135,
+                                        child: CarouselSlider(
+                                            items: guidefiltereddev.map((i) {
+                                              return Builder(builder:
+                                                  (BuildContext context) {
+                                                return Container(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width -
+                                                      20 -
+                                                      62,
+                                                  margin: EdgeInsets.symmetric(
+                                                      horizontal: 5),
+                                                  decoration: BoxDecoration(
+                                                    color: Color.fromARGB(
+                                                        255, 217, 185, 165),
+                                                  ),
+                                                  child: Container(
+                                                    child: Center(
+                                                      child: Column(
+                                                        children: [
+                                                          Container(
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                                    vertical:
+                                                                        5),
+                                                            height: 75,
+                                                            width: 75,
+                                                            child: Icon(
+                                                              Icons
+                                                                  .local_library_rounded,
+                                                              size: 50,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                color: (Colors
+                                                                        .grey)
+                                                                    .withOpacity(
+                                                                        0.8)),
+                                                          ),
+                                                          Text(
+                                                            i["judul_renungan"],
+                                                            style: TextStyle(
+                                                                fontSize: 18.0,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          ),
+                                                          Text(i["koleksi"] +
+                                                              "|" +
+                                                              i["penulis"])
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              });
+                                            }).toList(),
+                                            carouselController: _controllerDev,
+                                            options: CarouselOptions(
+                                              height: 200,
+                                              onPageChanged: (index, reason) {
+                                                setState(() {
+                                                  _currentDev = index;
+                                                });
+                                              },
+                                            )),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: guidefiltereddev
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          return GestureDetector(
+                                            onTap: () => _controllerDev
+                                                .animateToPage(entry.key),
+                                            child: Container(
+                                              width: 8.0,
+                                              height: 7.0,
+                                              margin: EdgeInsets.symmetric(
+                                                  vertical: 8.0,
+                                                  horizontal: 4.0),
+                                              decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: (Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.white
+                                                          : Colors.black)
+                                                      .withOpacity(
+                                                          _currentDev ==
+                                                                  entry.key
+                                                              ? 0.9
+                                                              : 0.4)),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
                                   )
                                 : Container(),
                           ),
@@ -404,7 +573,8 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             },
                           ),
                           Container(
-                            //the tosca box
+                            margin: EdgeInsets.all(0),
+                            //the green box
                             height: 160,
                             decoration: BoxDecoration(
                                 color: Color(0xffc1ffba),
@@ -420,15 +590,112 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                   )
                                 ]),
                             child: songcheck
-                                ? ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: 5,
-                                    separatorBuilder: (context, index) =>
-                                        const Divider(),
-                                    itemBuilder: (context, index) => Card(
-                                        child: Center(
-                                      child: Text("Placeholder"),
-                                    )),
+                                ? Column(
+                                    children: [
+                                      Container(
+                                        height: 135,
+                                        child: CarouselSlider(
+                                            items: guidefilteredsong.map((i) {
+                                              return Builder(builder:
+                                                  (BuildContext context) {
+                                                return Container(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width -
+                                                      20 -
+                                                      62,
+                                                  margin: EdgeInsets.symmetric(
+                                                      horizontal: 5),
+                                                  decoration: BoxDecoration(
+                                                    color: Color(0xffc1ffba),
+                                                  ),
+                                                  child: Container(
+                                                    child: Center(
+                                                      child: Column(
+                                                        children: [
+                                                          Container(
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                                    vertical:
+                                                                        5),
+                                                            height: 75,
+                                                            width: 75,
+                                                            child: Icon(
+                                                              Icons
+                                                                  .library_music_rounded,
+                                                              size: 50,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                color: (Colors
+                                                                        .grey)
+                                                                    .withOpacity(
+                                                                        0.8)),
+                                                          ),
+                                                          Text(
+                                                            i["judul_lagu"],
+                                                            style: TextStyle(
+                                                                fontSize: 18.0,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          ),
+                                                          Text(i["album"] +
+                                                              "|" +
+                                                              i["artist"])
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              });
+                                            }).toList(),
+                                            carouselController: _controllerSong,
+                                            options: CarouselOptions(
+                                              height: 200,
+                                              onPageChanged: (index, reason) {
+                                                setState(() {
+                                                  _currentSong = index;
+                                                });
+                                              },
+                                            )),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: guidefilteredsong
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          return GestureDetector(
+                                            onTap: () => _controllerSong
+                                                .animateToPage(entry.key),
+                                            child: Container(
+                                              width: 12.0,
+                                              height: 7.0,
+                                              margin: EdgeInsets.symmetric(
+                                                  vertical: 8.0,
+                                                  horizontal: 4.0),
+                                              decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: (Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.white
+                                                          : Colors.black)
+                                                      .withOpacity(
+                                                          _currentSong ==
+                                                                  entry.key
+                                                              ? 0.9
+                                                              : 0.4)),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
                                   )
                                 : Container(),
                           ),

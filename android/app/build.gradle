@@ -21,6 +21,12 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+   def keystorePropertiesFile = rootProject.file('key.properties')
+   if (keystorePropertiesFile.exists()) {
+       keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+   }
+
 apply plugin: 'com.android.application'
 // START: FlutterFire Configuration
 apply plugin: 'com.google.gms.google-services'
@@ -36,19 +42,26 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.tugas_akhir"
+        applicationId "com.example.MannaGo"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 		multiDexEnabled true
     }
-
+    signingConfigs {
+       release {
+           keyAlias keystoreProperties['keyAlias']
+           keyPassword keystoreProperties['keyPassword']
+           storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+           storePassword keystoreProperties['storePassword']
+       }
+   }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }
@@ -59,11 +72,13 @@ flutter {
 
 dependencies {
     implementation 'com.google.firebase:firebase-core:21.1.1'
-implementation 'com.google.firebase:firebase-messaging:23.1.1'
-
+    implementation 'com.google.firebase:firebase-messaging:23.1.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    //noinspection GradleDependency
+    implementation 'com.google.android.material:material:1.6.0'
 	implementation 'com.android.support:multidex:1.0.3'
 	implementation ('io.socket:socket.io-client:1.0.0') {
-	// excluding org.json which is provided by Android
+	// excluding org.json which is provided by Androidflutter install
 	exclude group: 'org.json', module: 'json'
 	}
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 
-import 'package:tugas_akhir/splash.dart';
+import 'package:MannaGo/splash.dart';
 
 class AlarmScreen extends StatefulWidget {
   const AlarmScreen({Key? key}) : super(key: key);
@@ -24,7 +24,6 @@ class _AlarmScreenState extends State<AlarmScreen> {
               'alarm page stageholder',
             ),
             ElevatedButton(onPressed: () => logout(), child: Text("logout"))
-            
           ],
         ),
       )),

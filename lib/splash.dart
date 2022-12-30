@@ -58,6 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
           MaterialPageRoute(
               builder: (context) => const LoginPage(title: "Login UI")),
         );
+        print("push replaced");
       });
     }
     setState(() {});

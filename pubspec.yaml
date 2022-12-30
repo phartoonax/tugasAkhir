@@ -1,17 +1,16 @@
-name: "tugas_akhir"
+name: MannaGo
 description: A new Flutter project.
 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: ">=2.18.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   backendless_sdk: ^7.2.3
   flutter_launcher_icons: ^0.11.0
-
   cupertino_icons: ^1.0.5
   webview_flutter: ^4.0.1
   shared_preferences: ^2.0.15

@@ -108,7 +108,56 @@ class _MainScreenState extends State<MainScreen> {
         listabsen.addAll(foundabsen!.cast<Map>());
         notesstatus = true;
         print("List Absen: " + listabsen.toString());
-        setState(() {});
+        setState(() {   if (foundabsen.isNotEmpty) {
+          setState(() {
+            confirmabsen.clear();
+
+            int indexfordb = 0;
+
+            for (int i = 0; i <= 6; i++) {
+              if ((DateTime.now().subtract(Duration(days: i)))
+                  .weekday ==
+                  DateTime.monday) {
+                dates = (DateTime.now().subtract(
+                    Duration(days: i))); //searching for monday
+              }
+            }
+            int intforcheckindex = foundabsen!.isNotEmpty
+                ? (foundabsen!.last?['created'] as DateTime).day -
+                dates.day +
+                1
+                : 1;
+            for (int i = 0; i < intforcheckindex; i++) {
+              if (foundabsen!.isNotEmpty) {
+                if ((dates.add(Duration(days: i))).day ==
+                    (foundabsen![indexfordb]?['created']
+                    as DateTime)
+                        .day) {
+                  indexfordb++;
+                  confirmabsen.add(true);
+                } else {
+                  confirmabsen.add(false);
+                }
+              } else {
+                confirmabsen.add(false);
+              }
+            }
+            int leng = confirmabsen.length;
+            for (int j = 1; j <= 7 - leng; j++) {
+              confirmabsen.add(false);
+            }
+            if ((foundabsen!.last?['created'] as DateTime).day !=
+                DateTime.now().day) {
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) => CustomDialog(
+                    name: namas,
+                    checkined: false,
+                    numberofcheckinweek: foundabsen.length,
+                    absen: confirmabsen,
+                  ));
+            }});
+        }});
       });
 
       setState(() {});
@@ -175,6 +224,7 @@ class _MainScreenState extends State<MainScreen> {
                 loadnotes();
                 setState(() {});
               });
+              print("pushed");
             });
           },
           child: Icon(Icons.add),
@@ -277,6 +327,8 @@ class _ContentMainState extends State<ContentMain> {
   @override
   initState() {
     super.initState();
+
+
   }
 
   @override
@@ -582,7 +634,9 @@ class _ContentMainState extends State<ContentMain> {
                                   leaderstatus: leadstatus,
                                 )),
                       );
+                      
                     });
+                    
                   },
                 ),
               ),
