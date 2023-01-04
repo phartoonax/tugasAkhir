@@ -9,7 +9,7 @@
         android:icon="@mipmap/ic_launcher">
         
         <service android:name="com.backendless.backendless_sdk.common.FlutterBackendlessFCMService"
-                  android:exported="true">
+            android:exported="true">
           <intent-filter>
             <action android:name="com.google.firebase.MESSAGING_EVENT"/>
           </intent-filter>

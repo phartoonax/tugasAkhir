@@ -7,13 +7,19 @@ packages:
       name: _fe_analyzer_shared
       sha256: "4897882604d919befd350648c7f91926a9d5de99e67b455bf0917cc2362f4bb8"
       url: "https://pub.dev"
+      sha256: "4897882604d919befd350648c7f91926a9d5de99e67b455bf0917cc2362f4bb8"
+      url: "https://pub.dev"
     source: hosted
     version: "47.0.0"
   _flutterfire_internals:
     dependency: transitive
     description:
       name: _flutterfire_internals
+<<<<<<< Updated upstream
       sha256: "3ff770dfff04a67b0863dff205a0936784de1b87a5e99b11c693fc10e66a9ce3"
+=======
+      sha256: d58dc7eda77a05866ad4fac26a4953e82bac29167aa571224d499da5d2027bc6
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "1.0.12"
@@ -53,10 +59,14 @@ packages:
     dependency: "direct main"
     description:
       name: backendless_sdk
+<<<<<<< Updated upstream
       sha256: "56df5f093109b738bf771b79148caedb3750bc2607a4b4af8e478f5d73905e5f"
+=======
+      sha256: "9ab96eca64911b509e92a86d728364bdfe2d5a4d8930d8dd0c48f7e08479b09c"
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
-    version: "7.2.7"
+    version: "7.2.3"
   boolean_selector:
     dependency: transitive
     description:
@@ -133,7 +143,11 @@ packages:
     dependency: "direct main"
     description:
       name: carousel_slider
+<<<<<<< Updated upstream
       sha256: "9c695cc963bf1d04a47bd6021f68befce8970bcd61d24938e1fb0918cf5d9c42"
+=======
+      sha256: d7256dca1ca9a4c9389126d57d70ce5d5e8fe25e7c81075b364f8a09dcba86ad
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "4.2.1"
@@ -169,6 +183,25 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+<<<<<<< Updated upstream
+=======
+  cloud_firestore_platform_interface:
+    dependency: transitive
+    description:
+      name: cloud_firestore_platform_interface
+      sha256: "86a21d4fd3afe89268e72f62691547e440eff3bcb2781d77c428df706e958149"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.10.0"
+  cloud_firestore_web:
+    dependency: transitive
+    description:
+      name: cloud_firestore_web
+      sha256: "2d7339bf3f79adcdb123a88e908474478b060317332189bdd5dcb2d498952127"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+>>>>>>> Stashed changes
   code_builder:
     dependency: transitive
     description:
@@ -277,7 +310,11 @@ packages:
     dependency: "direct main"
     description:
       name: firebase_core
+<<<<<<< Updated upstream
       sha256: c129209ba55f3d4272c89fb4a4994c15bea77fb6de63a82d45fb6bc5c94e4355
+=======
+      sha256: "01962872df08437d9be593caeab8c700624c93b629f3d3d60f061612d6263666"
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
@@ -301,7 +338,11 @@ packages:
     dependency: "direct main"
     description:
       name: firebase_messaging
+<<<<<<< Updated upstream
       sha256: dc010a6436333029fba858415fe65887c3fe44d8f6e6ea162bb8d3dd764fbcb6
+=======
+      sha256: "1ee95810148e5298c0fb6cb00ee4f099218f3d56d358e8047a9bdf4e68b504cb"
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "14.2.1"
@@ -309,7 +350,11 @@ packages:
     dependency: transitive
     description:
       name: firebase_messaging_platform_interface
+<<<<<<< Updated upstream
       sha256: abda2d766486096eb1c568c7b20aef46180596c8b0708190b929133ff03e0a8d
+=======
+      sha256: "4fad3604e98815c5c8df88273f714cab27078a1df5cd848a8ec984b609b86ddd"
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "4.2.10"
@@ -317,7 +362,11 @@ packages:
     dependency: transitive
     description:
       name: firebase_messaging_web
+<<<<<<< Updated upstream
       sha256: "7a0ce957bd2210e8636325152234728874dad039f1c7271ba1be5c752fdc5888"
+=======
+      sha256: cbd454c9551e6671747b526cbe643b814df020d630e7502058b9026902003a46
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
     version: "3.2.11"
@@ -350,6 +399,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.11.0"
+  flutter_screenutil:
+    dependency: "direct main"
+    description:
+      name: flutter_screenutil
+      sha256: "154a1abec9f047d9cdaf71856163315d9d7def5167409361a7f13a5bcd650017"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.6.0"
   flutter_slidable:
     dependency: "direct main"
     description:
@@ -428,10 +485,14 @@ packages:
     dependency: transitive
     description:
       name: image
+<<<<<<< Updated upstream
       sha256: f6ffe2895e3c86c6ad5a27e6302cf807403463e397cb2f0c580f619ac2fa588b
+=======
+      sha256: "8e9d133755c3e84c73288363e6343157c383a0c6c56fc51afcc5d4d7180306d6"
+>>>>>>> Stashed changes
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.2"
+    version: "3.3.0"
   intl:
     dependency: "direct main"
     description:
