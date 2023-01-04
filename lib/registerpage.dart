@@ -1,6 +1,9 @@
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'loginpage.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key, required this.title}) : super(key: key);
@@ -18,14 +21,15 @@ class _RegisterPageState extends State<RegisterPage> {
   late final TextEditingController passwordController = TextEditingController();
   late final TextEditingController confimationController =
       TextEditingController();
-
+  String? onerror;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SingleChildScrollView(
         child: SizedBox(
-          height: MediaQuery.of(context).size.height - 260,
+          height: 0.85.sh,
+          width: 1.sw,
           child: Container(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -35,11 +39,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(
                   height: 60,
                 ),
-                const Text(
-                  'Sign Up',
+                Text(
+                  'Silahkan Mendaftar',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 40,
+                    fontSize: 36.sm,
                   ),
                 ),
                 const SizedBox(
@@ -56,21 +60,32 @@ class _RegisterPageState extends State<RegisterPage> {
                               width: 0.1,
                             ),
                             borderRadius: BorderRadius.circular(8)),
-                        padding:
-                            EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
+                        padding: EdgeInsets.symmetric(
+                            vertical: 10.0, horizontal: 8.0),
                         child: Column(
                           children: [
                             TextFormField(
                               controller: emailController,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "email tidak bisa kosong";
+                                } else {
+                                  value = value.trim();
+                                  return EmailValidator.validate(value)
+                                      ? null
+                                      : "tolong berikan email yang benar";
+                                }
+                              },
                               maxLines: 1,
                               decoration: InputDecoration(
-                                hintText: 'Enter your email',
+                                hintText: 'Masukan Email',
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                     width: 1,
                                   ),
                                   borderRadius: BorderRadius.circular(10.0),
@@ -84,13 +99,15 @@ class _RegisterPageState extends State<RegisterPage> {
                               controller: usernameController,
                               maxLines: 1,
                               decoration: InputDecoration(
-                                hintText: 'Enter your desired Username',
+                                hintText:
+                                    'Masukan Nama Pengguna yang dinginkan',
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                     width: 1,
                                   ),
                                   borderRadius: BorderRadius.circular(10.0),
@@ -101,14 +118,16 @@ class _RegisterPageState extends State<RegisterPage> {
                               height: 5,
                             ),
                             PasswordInput(
-                                hintText: "Enter your password",
-                                textEditingController: passwordController),
+                                hintText: "Masukan Kata Sandi",
+                                textEditingController: passwordController,
+                                onerror: onerror),
                             const SizedBox(
                               height: 5,
                             ),
                             PasswordInput(
-                                hintText: "Confirm your Password",
-                                textEditingController: confimationController),
+                                hintText: "Konfirmasi Kata Sandi",
+                                textEditingController: confimationController,
+                                onerror: onerror),
                           ],
                         ),
                       ),
@@ -117,29 +136,69 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          BackendlessUser newuser = BackendlessUser()
-                            ..email = emailController.text
-                            ..password = passwordController.text;
-                          Backendless.userService.register(newuser).then((reguser) {
-                            reguser!.setProperty("name", usernameController.text);
-                            Backendless.userService.update(reguser).then((user) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text("User has been Registered")));
-                            });
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const LoginPage(title: 'Login UI'),
-                              ),
-                            );
-                          });
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          if (_formKey.currentState!.validate()) {
+                            BackendlessUser newuser = BackendlessUser()
+                              ..email = emailController.text
+                              ..password = passwordController.text;
+                            Backendless.userService
+                                .register(newuser)
+                                .then((reguser) {
+                              reguser!
+                                  .setProperty("name", usernameController.text);
+                              Backendless.userService
+                                  .update(reguser)
+                                  .then((user) {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      "Email Konfirmasi telah kami kirimkan ke alamat Email anda. Silahkan Konfirmasi terlebih dahulu melalui Email!"),
+                                  action: SnackBarAction(
+                                    label: 'OK',
+                                    onPressed: () =>
+                                        ScaffoldMessenger.of(context)
+                                            .hideCurrentSnackBar(),
+                                  ),
+                                ),
+                              );
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LoginPage(title: 'Login UI'),
+                                ),
+                              );
+                            }).catchError((onError, stackTrace) {
+                              print(
+                                  "There has been an error outside: $onError");
+                              PlatformException platformException = onError;
+                              print("Server reported an error outside.");
+                              print(
+                                  "Exception code: ${platformException.code}");
+                              print(
+                                  "Exception details: ${platformException.details}");
+                              print("Stacktrace: $stackTrace");
+                              onerror = "Mohon Cek kembali data anda";
+                              final sbarnoticeabsen = SnackBar(
+                                duration: Duration(seconds: 10),
+                                content: Text(
+                                    "telah terjadi sebuah error. ${platformException.details}"),
+                                action: SnackBarAction(
+                                  label: 'OK',
+                                  onPressed: () => ScaffoldMessenger.of(context)
+                                      .hideCurrentSnackBar(),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(sbarnoticeabsen);
+                            }, test: (e) => e is PlatformException);
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.fromLTRB(40, 15, 40, 15),
                         ),
                         child: const Text(
-                          'Sign Up',
+                          'Daftar',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
@@ -151,7 +210,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('already had an account? '),
+                          const Text('Sudah Mempunyai Akun? '),
                           TextButton(
                             onPressed: () {
                               Navigator.pushReplacement(
@@ -162,7 +221,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                               );
                             },
-                            child: const Text('Sign In'),
+                            child: const Text('Masuk Disini'),
                           ),
                         ],
                       ),
@@ -181,9 +240,13 @@ class _RegisterPageState extends State<RegisterPage> {
 class PasswordInput extends StatefulWidget {
   final String hintText;
   final TextEditingController textEditingController;
+  final String? onerror;
 
   const PasswordInput(
-      {required this.textEditingController, required this.hintText, Key? key})
+      {required this.textEditingController,
+      required this.hintText,
+      Key? key,
+      this.onerror})
       : super(key: key);
 
   @override
@@ -199,6 +262,7 @@ class _PasswordInputState extends State<PasswordInput> {
       obscureText: !pwdVisibility,
       decoration: InputDecoration(
         hintText: widget.hintText,
+        errorText: widget.onerror,
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: Colors.black,
@@ -222,7 +286,7 @@ class _PasswordInputState extends State<PasswordInput> {
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary ,
+            color: Theme.of(context).colorScheme.primary,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(10.0),
@@ -242,7 +306,7 @@ class _PasswordInputState extends State<PasswordInput> {
       ),
       validator: (val) {
         if (val!.isEmpty) {
-          return 'Required';
+          return 'Password Tidak boleh Kosong';
         }
         return null;
       },

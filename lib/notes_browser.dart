@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'notes_detail.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:fluttericon/octicons_icons.dart';
 
 class NotesBrowser extends StatefulWidget {
-  const NotesBrowser({super.key, required this.devRec});
+  const NotesBrowser({super.key, required this.devRec, required this.isnew, required this.isnewabsen, required this.datenote, required this.leaderstatus});
   final Map devRec;
+  final bool isnew;
+    final bool isnewabsen;
+  final String datenote;
+  final bool leaderstatus;
   @override
   State<NotesBrowser> createState() => NotesBrowserState();
 }
@@ -53,7 +59,8 @@ class NotesBrowserState extends State<NotesBrowser> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Simulation browser"),
+        title: Text(widget.devRec['judul_renungan']),
+        automaticallyImplyLeading: widget.isnew,
         backgroundColor: Color.fromARGB(255, 227, 234, 243),
         actions: [
           IconButton(
@@ -88,6 +95,24 @@ class NotesBrowserState extends State<NotesBrowser> {
               _controller.reload();
             },
           ),
+          IconButton(// ke notes_detail
+              onPressed: () {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotesDetail(
+                                devrecommend: widget.devRec,
+                                isnew: widget.isnew,
+                                isnewabsen: widget.isnewabsen,
+                                datenote: widget.datenote,
+                                leaderstatus: widget.leaderstatus,
+                              )),
+                    );
+                  });
+              },
+              icon: Icon(Icons.arrow_forward),
+              color: Theme.of(context).colorScheme.onSurface)
         ],
       ),
       body: Stack(

@@ -1,3 +1,4 @@
+import 'package:MannaGo/notes_browser.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -11,20 +12,22 @@ class NotesDetail extends StatefulWidget {
   NotesDetail(
       {Key? key,
       required this.isnew,
-      required this.startindex,
-      required this.endindex,
+      this.startindex,
+      this.endindex,
       required this.datenote,
-      this.idrecommend,
+      this.notesobject,
+      this.devrecommend,
       required this.leaderstatus,
       required this.isnewabsen})
       : super(key: key);
 
   final bool isnew;
   final bool isnewabsen;
-  final int startindex;
-  final int endindex;
+  final int? startindex;
+  final int? endindex;
   final String datenote;
-  final Map? idrecommend;
+  final Map? notesobject;
+  final Map? devrecommend;
   final bool leaderstatus;
   @override
   State<NotesDetail> createState() => _NotesDetailState();
@@ -49,10 +52,13 @@ class _NotesDetailState extends State<NotesDetail> {
   initState() {
     super.initState();
     _items.clear();
-    readJson();
+
+    if (widget.devrecommend == null) {
+      readJson();
+    } else {}
     if (widget.isnew == false) {
-      titleController.text = widget.idrecommend!['judul_catatan'];
-      notesController.text = widget.idrecommend!['catatan'];
+      titleController.text = widget.notesobject!['judul_catatan'];
+      notesController.text = widget.notesobject!['catatan'];
     }
   }
 
@@ -125,32 +131,68 @@ class _NotesDetailState extends State<NotesDetail> {
   }
 
   savetodatabase(bool share) {
-    Map notestemp = {
-      "judul_catatan": titleController.text,
-      "catatan": notesController.text,
-      "idstartkitab": widget.startindex,
-      "idendkitab": widget.endindex,
-      "sharestatus": share,
-    };
+    Map notestemp = Map();
+    if (widget.startindex == null || widget.endindex == null) {
+      //firstcheck, skeletion save
+      notestemp = {
+        "judul_catatan": titleController.text,
+        "catatan": notesController.text,
+        "sharestatus": share,
+      };
+    } else {
+      notestemp = {
+        "judul_catatan": titleController.text,
+        "catatan": notesController.text,
+        "idstartkitab": widget.startindex,
+        "idendkitab": widget.endindex,
+        "sharestatus": share,
+      };
+    }
     if (widget.isnew == true) {
       Backendless.data.of("Catatan_Sate").save(notestemp).then((value) {
-        print("save Status" + value.toString());
+        print("save Status " + value.toString());
         if (widget.isnewabsen == true) {
           Map absentemp = {};
           Backendless.data.of("Absensi").save(absentemp).then((value) {
             print("absen Status" + value.toString());
+            final sbarnoticeabsen = SnackBar(
+              duration: Duration(seconds: 10),
+              content: const Text("Data Catatan dan Absen telah tercatat!"),
+              action: SnackBarAction(
+                label: 'OK',
+                onPressed: () =>
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+              ),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(sbarnoticeabsen);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => MainScreen()))
+                  .then((value) {
+                setState(() {});
+              });
+            });
           });
         }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => MainScreen()))
-              .then((value) {
-            setState(() {});
+        if (widget.startindex == null || widget.endindex == null) {
+          //second check, setting relations for the rest of the object
+          Backendless.data.of("Catatan_Sate").setRelation(
+              value?['objectId'], "rekomendasi_renungan", childrenObjectIds: [
+            widget.devrecommend?['objectId']
+          ]).then((response) {
+            print("save Status " + response.toString());
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => MainScreen()))
+                  .then((value) {
+                setState(() {});
+              });
+            });
           });
-        });
+        }
       });
     } else {
-      notestemp["objectId"] = widget.idrecommend!['objectId'];
+      notestemp["objectId"] = widget.notesobject!['objectId'];
       final unitOfWork = UnitOfWork();
       unitOfWork.update(notestemp, "Catatan_Sate");
       unitOfWork.execute().then((value) {
@@ -192,32 +234,72 @@ class _NotesDetailState extends State<NotesDetail> {
         ),
         children: [
           FloatingActionButton.small(
-            onPressed: (() => alertpopchecker()),
+            onPressed: (() {
+              final state = _key.currentState;
+              state?.toggle();
+              if (titleController.text == "" ||
+                  notesController.text.isEmpty ||
+                  notesController.text == "" ||
+                  notesController.text.isEmpty) {
+                final sbarnoticeabsen = SnackBar(
+                  duration: Duration(seconds: 10),
+                  content:
+                      const Text("Mohon Isi catatan anda terlebih dahulu!"),
+                  action: SnackBarAction(
+                    label: 'OK',
+                    onPressed: () =>
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                  ),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(sbarnoticeabsen);
+              } else {
+                alertpopchecker();
+              }
+            }),
             child: const Icon(Icons.check),
             // child: Text("Yes"),
           ),
         ],
       ),
       appBar: AppBar(
-        title: readrangechecker(),
+        title: (widget.devrecommend == null)
+            ? readrangechecker()
+            : Text(widget.devrecommend!["judul_renungan"] +
+                "|" +
+                widget.devrecommend!["penulis"]),
         automaticallyImplyLeading: widget.isnew,
         actions: [
           IconButton(
               onPressed: () {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => NotesAlkitab(
+                if (widget.endindex != null && widget.startindex != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotesAlkitab(
+                                datenote: widget.datenote,
+                                isnew: widget.isnew,
+                                isnewabsen: widget.isnewabsen,
+                                endindex: widget.endindex!,
+                                startindex: widget.startindex!,
+                                leaderstatus: widget.leaderstatus,
+                              )),
+                    );
+                  });
+                } else {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotesBrowser(
                               datenote: widget.datenote,
                               isnew: widget.isnew,
                               isnewabsen: widget.isnewabsen,
-                              endindex: widget.endindex,
-                              startindex: widget.startindex,
                               leaderstatus: widget.leaderstatus,
-                            )),
-                  );
-                });
+                              devRec: widget.devrecommend!)),
+                    );
+                  });
+                }
               },
               icon: Icon(Icons.book)),
         ],

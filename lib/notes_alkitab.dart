@@ -1,8 +1,10 @@
 // import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'notes_detail.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:fluttericon/octicons_icons.dart';
 
 class NotesAlkitab extends StatefulWidget {
   const NotesAlkitab(
@@ -11,7 +13,8 @@ class NotesAlkitab extends StatefulWidget {
       required this.endindex,
       required this.isnew,
       required this.datenote,
-      required this.leaderstatus, required this.isnewabsen})
+      required this.leaderstatus,
+      required this.isnewabsen})
       : super(key: key);
 
   final int startindex;
@@ -144,9 +147,9 @@ class NotesAlkitabState extends State<NotesAlkitab>
               child: Text(
                 widget.datenote,
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.white),
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
             ),
             Container(
@@ -169,59 +172,57 @@ class NotesAlkitabState extends State<NotesAlkitab>
                     );
                   });
                 },
-                icon: Icon(Icons.notes_rounded)),
+                icon: Icon(Octicons.note,
+                    color: Theme.of(context).colorScheme.onSurface)),
           ],
         ),
         body: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: KeepAlive(
-            keepAlive: true,
-            child: FutureBuilder<String>(
-              future: _calculation,
-              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-                List<Widget> children;
-                if (snapshot.hasData) {
-                  children = <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(left: 10, right: 10, top: 30),
-                      child: SingleChildScrollView(
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height - 120,
-                          child: ListView.builder(
-                            itemCount: _items.length,
-                            cacheExtent: 300,
-                            addAutomaticKeepAlives: true,
-                            padding: EdgeInsets.zero,
-                            itemBuilder: (BuildContext cont, int indx) {
-                              return pasalchecker(indx);
-                            },
-                          ),
+          height: 1.sh,
+          child: FutureBuilder<String>(
+            future: _calculation,
+            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+              List<Widget> children;
+              if (snapshot.hasData) {
+                children = <Widget>[
+                  Padding(
+                    padding: EdgeInsets.only(left: 10, right: 10, top: 30),
+                    child: SingleChildScrollView(
+                      child: SizedBox(
+                        height: 0.8.sh,
+                        child: ListView.builder(
+                          itemCount: _items.length,
+                          cacheExtent: 300,
+                          addAutomaticKeepAlives: true,
+                          padding: EdgeInsets.zero,
+                          itemBuilder: (BuildContext cont, int indx) {
+                            return pasalchecker(indx);
+                          },
                         ),
                       ),
-                    )
-                  ];
-                } else {
-                  children = <Widget>[
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 16),
-                      child: Text('Awaiting result...'),
-                    ),
-                  ];
-                }
-                return Center(
-                    child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: children,
-                ));
-              },
+                  )
+                ];
+              } else {
+                children = <Widget>[
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text('Awaiting result...'),
+                  ),
+                ];
+              }
+              return Center(
+                  child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ));
+            },
 
-              /// setup a listview for the scripture. style is tbd.
-            ),
+            /// setup a listview for the scripture. style is tbd.
           ),
         ));
   }

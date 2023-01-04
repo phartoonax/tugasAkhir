@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    
   backendless_sdk: 7.2.3
   flutter_launcher_icons: 0.11.0
   cupertino_icons: 1.0.5
@@ -23,6 +24,15 @@ dependencies:
   firebase_messaging: 14.2.0
   upgrader: 5.0.0
   flutter_screenutil: 5.6.0
+  fluttericon: 2.0.0
+  google_fonts: ^3.0.1
+  date_format: ^2.0.7
+  flutter_time_picker_spinner: ^2.0.0
+  android_alarm_manager_plus: ^2.1.0
+  flutter_local_notifications: ^13.0.0
+  textfield_tags: ^2.0.2
+  dropdown_search: ^5.0.5
+  
 
 
 dev_dependencies:
@@ -36,5 +46,6 @@ flutter:
   - assets/
 
 flutter_icons:
-  image_path_android: "assets/android/play_store_512.png"
+  image_path_android:                           
+   "assets/android/play_store_512.png"
   android: true

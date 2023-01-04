@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:MannaGo/main_screen.dart';
 import 'package:MannaGo/registerpage.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key, required this.title}) : super(key: key);
@@ -14,15 +15,17 @@ class LoginPage extends StatefulWidget {
 }
 
 FocusNode node = new FocusNode();
+FocusNode node2 = new FocusNode();
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController emailController = TextEditingController();
+  late final TextEditingController email2Controller = TextEditingController();
   late final TextEditingController passwordController = TextEditingController();
 
   var rememberValue = false;
   bool validation = false;
-
+  String? onerror;
   @override
   void initState() {
     node.addListener(() {
@@ -30,7 +33,11 @@ class _LoginPageState extends State<LoginPage> {
         formatNickname();
       }
     });
-
+    node2.addListener(() {
+      if (!node2.hasFocus) {
+        formatNickname();
+      }
+    });
     super.initState();
   }
 
@@ -44,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SingleChildScrollView(
         child: SizedBox(
-          height: MediaQuery.of(context).size.height - 249,
+          height: 0.8.sh,
           child: Container(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -75,17 +82,19 @@ class _LoginPageState extends State<LoginPage> {
                                 width: 0.1,
                               ),
                               borderRadius: BorderRadius.circular(8)),
-                          padding:
-                              EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 10.0, horizontal: 8.0),
                           child: Column(
                             children: [
                               TextFormField(
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    value = value!.trim();
-                                    EmailValidator.validate(value)
+                                    return "email tidak bisa kosong";
+                                  } else {
+                                    value = value.trim();
+                                    return EmailValidator.validate(value)
                                         ? null
-                                        : "Please enter a valid email";
+                                        : "tolong berikan email yang benar";
                                   }
                                 },
                                 focusNode: node,
@@ -93,13 +102,15 @@ class _LoginPageState extends State<LoginPage> {
                                 controller: emailController,
                                 decoration: InputDecoration(
                                   hintText: 'Enter your email',
+                                  errorText: onerror,
                                   prefixIcon: const Icon(Icons.mail),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                       width: 1,
                                     ),
                                     borderRadius: BorderRadius.circular(10.0),
@@ -111,32 +122,110 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               PasswordInput(
                                   hintText: "Enter your password",
-                                  textEditingController: passwordController),
+                                  textEditingController: passwordController,
+                                  onerror: onerror),
                               CheckboxListTile(
-                                title: const Text("Remember me"),
+                                title: const Text("Ingat Saya"),
                                 contentPadding: EdgeInsets.zero,
                                 value: rememberValue,
-                                activeColor: Theme.of(context).colorScheme.primary,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
                                 onChanged: (newValue) {
                                   setState(() {
                                     rememberValue = newValue!;
                                   });
                                 },
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                               ),
                               Container(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const LoginPage(title: 'Login UI'),
+                                    Backendless.userService.logout();
+                                    showDialog<String>(
+                                      context: context,
+                                      builder: (BuildContext context) =>
+                                          AlertDialog(
+                                        title: const Text(
+                                            'Masukan Email anda untuk mengganti Password'),
+                                        content: TextField(
+                                          controller: email2Controller,
+                                          decoration: InputDecoration(
+                                            hintText: 'Enter your email',
+                                            errorText: onerror,
+                                            prefixIcon: const Icon(Icons.mail),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderSide: BorderSide(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                                width: 1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10.0),
+                                            ),
+                                          ),
+                                          focusNode: node2,
+                                          maxLines: 1,
+                                        ),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, 'Tidak'),
+                                            child: const Text('Tidak'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Backendless.userService.logout();
+                                              Backendless.userService
+                                                  .restorePassword(
+                                                      email2Controller.text)
+                                                  .then((value) {
+                                                {
+                                                  final sbarnoticeabsen =
+                                                      SnackBar(
+                                                    duration:
+                                                        Duration(seconds: 5),
+                                                    content: const Text(
+                                                        "Silahkan cek email anda untuk mengubah password anda!"),
+                                                    action: SnackBarAction(
+                                                      label: 'OK',
+                                                      onPressed: () =>
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .hideCurrentSnackBar(),
+                                                    ),
+                                                  );
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                          sbarnoticeabsen);
+                                                  Navigator.of(context)
+                                                      .pushAndRemoveUntil(
+                                                          MaterialPageRoute(
+                                                              builder:
+                                                                  (context) =>
+                                                                      LoginPage(
+                                                                        title:
+                                                                            "login",
+                                                                      )),
+                                                          (Route<dynamic>
+                                                                  route) =>
+                                                              false);
+                                                }
+                                              });
+                                            },
+                                            child: const Text('Ya'),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },
-                                  child: const Text('Forgot Password?'),
+                                  child: const Text('Lupa Password?'),
                                 ),
                               ),
                             ],
@@ -147,6 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         ElevatedButton(
                           onPressed: () {
+                            FocusManager.instance.primaryFocus?.unfocus();
                             if (_formKey.currentState!.validate()) {
                               Backendless.userService
                                   .login(emailController.text,
@@ -157,22 +247,61 @@ class _LoginPageState extends State<LoginPage> {
                                     .then((response) {
                                   print("Is login valid? - $response");
                                   if (response == true) {
+                                    final sbarnoticeabsen = SnackBar(
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 4),
+                                      content: Text("Login Berhasi!"),
+                                      action: SnackBarAction(
+                                        label: 'OK',
+                                        onPressed: () =>
+                                            ScaffoldMessenger.of(context)
+                                                .hideCurrentSnackBar(),
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(sbarnoticeabsen);
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) => MainScreen()),
                                     );
                                   }
-                                }).catchError((onError) {
-                                  print("There has been an error: $onError");
+                                }).catchError((onError, stackTrace) {
+                                  print(
+                                      "There has been an error inside: $onError");
                                   PlatformException platformException = onError;
-                                  print("Server reported an error.");
+                                  print("Server reported an error inside.");
                                   print(
                                       "Exception code: ${platformException.code}");
                                   print(
                                       "Exception details: ${platformException.details}");
-                                });
-                              });
+                                  print("Stacktrace: $stackTrace");
+                                }, test: (e) => e is PlatformException);
+                              }).catchError((onError, stackTrace) {
+                                print(
+                                    "There has been an error outside: $onError");
+                                PlatformException platformException = onError;
+                                print("Server reported an error outside.");
+                                print(
+                                    "Exception code: ${platformException.code}");
+                                print(
+                                    "Exception details: ${platformException.details}");
+                                print("Stacktrace: $stackTrace");
+                                onerror = platformException.details;
+                                final sbarnoticeabsen = SnackBar(
+                                  duration: Duration(seconds: 10),
+                                  content: Text(
+                                      "telah terjadi sebuah error. ${platformException.details}"),
+                                  action: SnackBarAction(
+                                    label: 'OK',
+                                    onPressed: () =>
+                                        ScaffoldMessenger.of(context)
+                                            .hideCurrentSnackBar(),
+                                  ),
+                                );
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(sbarnoticeabsen);
+                              }, test: (e) => e is PlatformException);
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -191,18 +320,18 @@ class _LoginPageState extends State<LoginPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('Not registered yet?'),
+                            const Text('Belum terdaftar?'),
                             TextButton(
                               onPressed: () {
-                                Navigator.pushReplacement(
+                                Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RegisterPage(title: 'register UI'),
+                                    builder: (context) => const RegisterPage(
+                                        title: 'register UI'),
                                   ),
                                 );
                               },
-                              child: const Text('Create an account'),
+                              child: const Text('Buat akun Baru'),
                             ),
                           ],
                         ),
@@ -222,9 +351,13 @@ class _LoginPageState extends State<LoginPage> {
 class PasswordInput extends StatefulWidget {
   final String hintText;
   final TextEditingController textEditingController;
+  final String? onerror;
 
   const PasswordInput(
-      {required this.textEditingController, required this.hintText, Key? key})
+      {required this.textEditingController,
+      required this.hintText,
+      Key? key,
+      this.onerror})
       : super(key: key);
 
   @override
@@ -241,6 +374,7 @@ class _PasswordInputState extends State<PasswordInput> {
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.lock),
         hintText: widget.hintText,
+        errorText: widget.onerror,
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: Colors.black,
@@ -284,7 +418,7 @@ class _PasswordInputState extends State<PasswordInput> {
       ),
       validator: (val) {
         if (val!.isEmpty) {
-          return 'Required';
+          return 'password tidak boleh kosong';
         }
         return null;
       },

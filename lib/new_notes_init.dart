@@ -1,8 +1,11 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'dart:developer';
+
 import 'package:MannaGo/notes_browser.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'notes_alkitab.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -24,9 +27,6 @@ class NewNotesinitPage extends StatefulWidget {
 }
 
 List<Map>? itemers = List.empty(growable: true);
-List<Map>? kitabs = [
-  {"kitab_singkat": ""}
-];
 String formattedDate = "";
 
 enum Readingmode { sabda, biblestudytools, gms, custom }
@@ -73,7 +73,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       ..relationsDepth = 1
       ..related = ["rekomendasi_genre"];
     Backendless.data.of('Rekomendasi_Genre').find().then((value) {
-      itemers!.clear();
+      itemers?.clear();
       itemers = value?.cast<Map>();
     });
     Backendless.data.of('Rekomendasi_Renungan').find(cond).then((value) {
@@ -84,14 +84,25 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       _guidesong!.clear();
       _guidesong = value?.cast<Map>();
     });
-    DataQueryBuilder querry = DataQueryBuilder()
-      ..whereClause = "created > '23-Mar-2015'"
-      ..pageSize = 100;
+    DataQueryBuilder querry = DataQueryBuilder()..pageSize = 100;
 
     Backendless.data.of('devotion_guide').find(querry).then((value) {
       _guide = value?.cast<Map>();
     });
 
+    //search for all catatan and group by genre buat AI Rekomendasi
+    cond
+      ..relationsDepth = 2
+      ..related = ['rekomendasi_renungan.rekomendasi_genre']
+      ..properties = [
+        "Count(objectId)",
+        "rekomendasi_renungan.rekomendasi_genre.judul_genre as Genre"
+      ]
+      ..groupBy = ['rekomendasi_renungan.rekomendasi_genre.judul_genre'];
+
+    Backendless.data.of('Catatan_Sate').find(cond).then((foundnotes) {
+      log("Notes|" + foundnotes.toString());
+    });
     setState(() {});
   }
 
@@ -231,16 +242,16 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     );
     return Scaffold(
         appBar: AppBar(
-          title: Text('Add New Notes'),
+          title: Text('Tambah Catatan baru'),
           leading: BackButton(),
           actions: [
             Center(
               child: Text(
                 formattedDate,
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.white),
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
             ),
             Container(
@@ -281,6 +292,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => NotesBrowser(
+                                      isnew: true,
+                                      isnewabsen: widget.isnewabsen,
+                                      datenote: formattedDate,
+                                      leaderstatus: widget.leaderstatus,
                                       devRec: guidefiltereddev[_currentDev])));
                         } else {
                           int starti = 0;
@@ -313,6 +328,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         }
                         //additional if check song
                         if (songcheck == true) {
+                          //TODO:RELAY TO YOTUUBE, DELETE DOWNWARDS
                           final sbarnotice = SnackBar(
                             content: Text("lagu anda adalah " +
                                 guidefilteredsong[_currentSong]["judul_lagu"]),
@@ -327,10 +343,12 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         }
                       }
                     }
-                    ;
                   });
                 }),
-                icon: Icon(Icons.chevron_right))
+                icon: Icon(
+                  Icons.arrow_forward,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ))
           ],
         ),
         body: FutureBuilder<String>(
@@ -342,7 +360,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                   CheckboxListTile(
                     contentPadding: EdgeInsets.all(0),
                     visualDensity: VisualDensity.compact,
-                    title: const Text("I want to use the recomendation"),
+                    title: const Text("Saya ingin Menggunakan rekomendasi"),
                     value: recomendationcheck,
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (newvalue) {
@@ -415,6 +433,30 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                   onChanged: (value) {
                                     setState(() {
                                       initdropdownvalue = value.toString();
+                                      guidefiltereddev.clear();
+                                      guidefilteredsong.clear();
+                                      _guidedev!.forEach((element) {
+                                        (element["rekomendasi_genre"] as List)
+                                            .forEach((genre) {
+                                          if (genre["judul_genre"] ==
+                                              initdropdownvalue) {
+                                            guidefiltereddev.add(element);
+                                          }
+                                        });
+                                      });
+                                      _guidesong!.forEach((element) {
+                                        (element["rekomendasi_genre"] as List)
+                                            .forEach((genre) {
+                                          if (genre["judul_genre"] ==
+                                              initdropdownvalue) {
+                                            guidefilteredsong.add(element);
+                                          }
+                                        });
+                                      });
+                                      print(
+                                          "object filtered| $guidefiltereddev");
+                                      print(
+                                          "object filtered| $guidefilteredsong");
                                     });
                                   }),
                             ],
@@ -422,12 +464,13 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                           CheckboxListTile(
                             contentPadding: EdgeInsets.all(0),
                             visualDensity: VisualDensity.compact,
-                            title: const Text("Devotions"),
+                            title: const Text("Renungan"),
                             value: devotioncheck,
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (newvalue) {
                               setState(() {
                                 devotioncheck = newvalue!;
+                                customselect = false;
                               });
                             },
                           ),
@@ -564,7 +607,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                           CheckboxListTile(
                             contentPadding: EdgeInsets.all(0),
                             visualDensity: VisualDensity.compact,
-                            title: const Text("Songs"),
+                            title: const Text("Lagu"),
                             value: songcheck,
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (newvalue) {
@@ -723,7 +766,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                     alignment: AlignmentDirectional.center,
                     children: [
                       Container(
-                        height: MediaQuery.of(context).size.height - 670 - 50,
+                        height: 0.15.sh,
                         width: MediaQuery.of(context).size.width,
                         padding: EdgeInsets.only(
                           left: 10,
@@ -740,6 +783,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             Row(
                               children: [
@@ -784,13 +828,15 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     },
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
-                                    title: const Text("SABDA - BAST"),
+                                    title: const Text("SABDA - BAST",
+                                        textScaleFactor: 0.8),
                                   ),
                                 ),
                                 Expanded(
                                   child: RadioListTile<Readingmode>(
                                     title: const Text(
-                                        "Biblestudytools - chronological"),
+                                        "Biblestudytools - chronological",
+                                        textScaleFactor: 0.8),
                                     value: Readingmode.biblestudytools,
                                     groupValue: _reading,
                                     // dense: true,
@@ -806,14 +852,20 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                               children: [
                                 Expanded(
                                   child: RadioListTile<Readingmode>(
-                                    title: const Text("GMS - ILMB"),
+                                    title: const Text("GMS - ILMB",
+                                        textScaleFactor: 0.8),
                                     value: Readingmode.gms,
                                     groupValue: _reading,
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
                                     onChanged: (value) {
                                       setState(() {
-                                        init_start_kitab = "Neh";
+                                        init_start_kitab = "Est";
+                                        init_start_pasal = "3";
+                                        init_start_ayat = "1";
+                                        init_end_kitab = "Est";
+                                        init_end_pasal = "4";
+                                        init_end_ayat = "17";
                                         customselect = false;
 
                                         _reading = value;
@@ -850,7 +902,8 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                 ),
                                 Expanded(
                                   child: RadioListTile<Readingmode>(
-                                    title: const Text("Custom ..."),
+                                    title: const Text("Custom ...",
+                                        textScaleFactor: 0.8),
                                     value: Readingmode.custom,
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
@@ -867,11 +920,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         ),
                       ),
                       Container(
-                        //cover
+                        //cover for radio
 
-                        height: devotioncheck
-                            ? MediaQuery.of(context).size.height - 670 - 50
-                            : 0,
+                        height: devotioncheck ? 0.15.sh : 0,
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.5),
                           border: Border.all(
@@ -883,314 +934,59 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 15, vertical: 20),
-                        child: Row(
-                          children: [
-                            Text("reading : ",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Roboto',
-                                )),
-                          ],
+                  Container(
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 15, vertical: 20),
+                          child: Row(
+                            children: [
+                              Text("Pembacaan : ",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontFamily: 'Roboto',
+                                  )),
+                            ],
+                          ),
                         ),
-                      ),
-                      // mulai
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: DropdownButton(
-                            // kitab
-                            value: init_start_kitab,
-                            hint: Text(""),
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            isDense: true,
-                            items: kitab
-                                .map((items) {
-                                  return DropdownMenuItem(
-                                    value: items,
-                                    child: SizedBox(
-                                        width: 37,
-                                        child: Text(items,
-                                            textAlign: TextAlign.center)),
-                                  );
-                                })
-                                .toSet()
-                                .toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    setState(() {
-                                      //setting start pasal list
-                                      start_pasal.clear();
-                                      end_pasal.clear();
-                                      start_ayat.clear();
-                                      end_ayat.clear();
-                                      var temppasal = (_items.where((pasal) =>
-                                          (pasal["kitab_singkat"] == value)));
-                                      temppasal.forEach((element) {
-                                        start_pasal
-                                            .add(element["pasal"].toString());
-                                        end_pasal
-                                            .add(element["pasal"].toString());
-                                      });
-                                      var tempayat = (temppasal.where(
-                                          (ayat) => (ayat["pasal"] == 1)));
-                                      tempayat.forEach((element) {
-                                        start_ayat
-                                            .add(element["ayat"].toString());
-                                        end_ayat
-                                            .add(element["ayat"].toString());
-                                      });
-
-                                      init_start_kitab = value.toString();
-                                      init_start_pasal =
-                                          start_pasal.elementAt(0).toString();
-                                      init_start_ayat =
-                                          start_ayat.elementAt(0).toString();
-                                      init_end_kitab = value.toString();
-                                      init_end_pasal =
-                                          start_pasal.elementAt(0).toString();
-                                      init_end_ayat =
-                                          start_ayat.elementAt(1).toString();
-                                    });
-                                  }
-                                : null),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 2.0),
-                        child: DropdownButton(
-                            // pasal
-                            value: init_start_pasal,
-                            hint: Text(""),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            isDense: true,
-                            items: start_pasal.map((items) {
-                              return DropdownMenuItem(
-                                value: items,
-                                child: SizedBox(
-                                    width: 20,
-                                    child: Text(items,
-                                        textAlign: TextAlign.center)),
-                              );
-                            }).toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    if (init_start_kitab == init_end_kitab) {
+                        // mulai
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10.0),
+                          child: 
+                          DropdownButton(
+                              // kitab
+                              value: devotioncheck ? null : init_start_kitab,
+                              hint: Text(""),
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              isDense: true,
+                              items: kitab
+                                  .map((items) {
+                                    return DropdownMenuItem(
+                                      value: items,
+                                      child: SizedBox(
+                                          width: 37,
+                                          child: Text(items,
+                                              textAlign: TextAlign.center)),
+                                    );
+                                  })
+                                  .toSet()
+                                  .toList(),
+                              onChanged: customselect
+                                  ? (value) {
                                       setState(() {
-                                        //reset list ayat
-                                        start_ayat.clear();
-                                        end_ayat.clear();
-                                        var tempayat = (_items.where((ayat) =>
-                                            (ayat["pasal"] ==
-                                                    int.parse(
-                                                        value as String) &&
-                                                ayat["kitab_singkat"] ==
-                                                    init_start_kitab)));
-                                        tempayat.forEach((element) {
-                                          start_ayat
-                                              .add(element["ayat"].toString());
-                                          end_ayat
-                                              .add(element["ayat"].toString());
-                                        });
-
-                                        init_start_pasal = value.toString();
-                                        init_end_pasal = value.toString();
-
-                                        init_start_ayat =
-                                            start_ayat.elementAt(0).toString();
-                                        init_end_ayat =
-                                            start_ayat.elementAt(1).toString();
-                                      });
-                                    } else {
-                                      setState(() {
-                                        start_ayat.clear();
-
-                                        var tempayat = (_items.where((ayat) =>
-                                            (ayat["pasal"] ==
-                                                    int.parse(
-                                                        value as String) &&
-                                                ayat["kitab_singkat"] ==
-                                                    init_start_kitab)));
-                                        tempayat.forEach((element) {
-                                          start_ayat
-                                              .add(element["ayat"].toString());
-                                        });
-
-                                        init_start_pasal = value.toString();
-
-                                        init_start_ayat =
-                                            start_ayat.elementAt(0).toString();
-                                      });
-                                    }
-                                  }
-                                : null),
-                      ),
-                      Container(
-                        child: Text(" : "),
-                        padding: EdgeInsets.only(right: 2),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 5.0),
-                        child: DropdownButton(
-
-                            // ayat
-                            value: init_start_ayat,
-                            hint: Text(""),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            isDense: true,
-                            items: start_ayat.map((items) {
-                              return DropdownMenuItem(
-                                value: items,
-                                child: SizedBox(
-                                    width: 20,
-                                    child: Text(
-                                      items,
-                                      textAlign: TextAlign.center,
-                                    )),
-                              );
-                            }).toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    setState(() {
-                                      init_start_ayat = value.toString();
-
-                                      if (init_start_pasal == init_end_pasal) {
-                                        if (value.toString() ==
-                                            start_ayat.last.toString()) {
-                                          if (init_start_pasal ==
-                                              start_pasal.last.toString()) {
-                                            int indexkitab = (kitab.toList())
-                                                .indexOf(init_start_kitab);
-                                            end_pasal.clear();
-                                            end_ayat.clear();
-                                            var tempasal = (_items.where(
-                                                (kit) =>
-                                                    (kit["kitab_singkat"] ==
-                                                        kitab.elementAt(
-                                                            indexkitab + 1))));
-                                            init_end_kitab =
-                                                tempasal.first["kitab_singkat"];
-                                            tempasal.forEach((element) {
-                                              end_pasal.add(
-                                                  element["pasal"].toString());
-                                            });
-                                            init_end_pasal =
-                                                end_pasal.first.toString();
-                                            var tempayat = (tempasal.where(
-                                                (ayat) =>
-                                                    (ayat["pasal"] == 1)));
-                                            tempayat.forEach((element) {
-                                              end_ayat.add(
-                                                  element["ayat"].toString());
-                                            });
-                                            init_end_ayat =
-                                                end_ayat.first.toString();
-                                          } else {
-                                            init_end_pasal = (int.parse(
-                                                        init_start_pasal
-                                                            as String) +
-                                                    1)
-                                                .toString();
-
-                                            end_ayat.clear();
-
-                                            var tempayat = (_items.where(
-                                                (ayat) => (ayat["pasal"] ==
-                                                        int.parse(init_end_pasal
-                                                            as String) &&
-                                                    ayat["kitab_singkat"] ==
-                                                        init_start_kitab)));
-                                            tempayat.forEach((element) {
-                                              end_ayat.add(
-                                                  element["ayat"].toString());
-                                            });
-                                            init_end_ayat =
-                                                end_ayat.first.toString();
-                                          }
-                                        } else {
-                                          init_end_ayat =
-                                              (int.parse(value as String) + 1)
-                                                  .toString();
-                                        }
-                                      }
-                                    });
-                                  }
-                                : null),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(right: 5.0),
-                        child: Text(" - "),
-                      ),
-                      // selesai
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: DropdownButton(
-                            // kitab
-                            value: init_end_kitab,
-                            hint: Text(""),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            isDense: true,
-                            items: kitab
-                                .map((items) {
-                                  return DropdownMenuItem(
-                                    value: items,
-                                    child: SizedBox(
-                                        width: 37,
-                                        child: Text(items,
-                                            textAlign: TextAlign.center)),
-                                  );
-                                })
-                                .toSet()
-                                .toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    setState(() {
-                                      int indexmulai;
-                                      int indexakhir;
-                                      List tempkitab = kitab.toList();
-                                      indexmulai =
-                                          tempkitab.indexOf(init_start_kitab);
-                                      indexakhir =
-                                          tempkitab.indexOf(value.toString());
-                                      if (indexakhir < indexmulai) {
-                                        final sbarerror = SnackBar(
-                                          content: const Text(
-                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                          action: SnackBarAction(
-                                            label: 'OK',
-                                            onPressed: () =>
-                                                ScaffoldMessenger.of(context)
-                                                    .hideCurrentSnackBar(),
-                                          ),
-                                        );
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(sbarerror);
-                                      } else {
+                                        //setting start pasal list
+                                        start_pasal.clear();
                                         end_pasal.clear();
+                                        start_ayat.clear();
                                         end_ayat.clear();
-
                                         var temppasal = (_items.where((pasal) =>
                                             (pasal["kitab_singkat"] == value)));
                                         temppasal.forEach((element) {
@@ -1208,186 +1004,460 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                               .add(element["ayat"].toString());
                                         });
 
+                                        init_start_kitab = value.toString();
+                                        init_start_pasal =
+                                            start_pasal.elementAt(0).toString();
+                                        init_start_ayat =
+                                            start_ayat.elementAt(0).toString();
                                         init_end_kitab = value.toString();
                                         init_end_pasal =
                                             start_pasal.elementAt(0).toString();
                                         init_end_ayat =
                                             start_ayat.elementAt(1).toString();
-                                      }
-                                    });
-                                  }
-                                : null),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 2.0),
-                        child: DropdownButton(
-                            // pasal
-                            value: init_end_pasal,
-                            hint: Text(""),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            isDense: true,
-                            items: end_pasal.map((items) {
-                              return DropdownMenuItem(
-                                value: items,
-                                child: SizedBox(
-                                    width: 20,
-                                    child: Text(
-                                      items,
-                                      textAlign: TextAlign.center,
-                                    )),
-                              );
-                            }).toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    setState(() {
-                                      var indexmulai;
-                                      var indexakhir;
-                                      indexmulai = _items.singleWhere(
-                                          (element) =>
-                                              element["pasal"] ==
-                                                  int.parse(init_start_pasal
-                                                      as String) &&
-                                              element["kitab_singkat"] ==
-                                                  init_start_kitab.toString() &&
-                                              element["ayat"] ==
-                                                  int.parse(init_start_ayat
-                                                      as String));
-                                      indexakhir = _items.singleWhere(
-                                          (element) =>
-                                              element["pasal"] ==
-                                                  int.parse(value as String) &&
-                                              element["kitab_singkat"] ==
-                                                  init_end_kitab &&
-                                              element["ayat"] ==
-                                                  int.parse(
-                                                      init_end_ayat as String));
+                                      });
+                                    }
+                                  : null),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 2.0),
+                          child: DropdownButton(
+                              // pasal
+                              value: devotioncheck ? null : init_start_pasal,
+                              hint: Text(""),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              isDense: true,
+                              items: start_pasal.map((items) {
+                                return DropdownMenuItem(
+                                  value: items,
+                                  child: SizedBox(
+                                      width: 20,
+                                      child: Text(items,
+                                          textAlign: TextAlign.center)),
+                                );
+                              }).toList(),
+                              onChanged: customselect
+                                  ? (value) {
+                                      if (init_start_kitab == init_end_kitab) {
+                                        setState(() {
+                                          //reset list ayat
+                                          start_ayat.clear();
+                                          end_ayat.clear();
+                                          var tempayat = (_items.where((ayat) =>
+                                              (ayat["pasal"] ==
+                                                      int.parse(
+                                                          value as String) &&
+                                                  ayat["kitab_singkat"] ==
+                                                      init_start_kitab)));
+                                          tempayat.forEach((element) {
+                                            start_ayat.add(
+                                                element["ayat"].toString());
+                                            end_ayat.add(
+                                                element["ayat"].toString());
+                                          });
 
-                                      if (indexakhir["pasal"] <
-                                          indexmulai["pasal"]) {
-                                        final sbarerror = SnackBar(
-                                          content: const Text(
-                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                          action: SnackBarAction(
-                                            label: 'OK',
-                                            onPressed: () =>
-                                                ScaffoldMessenger.of(context)
-                                                    .hideCurrentSnackBar(),
-                                          ),
-                                        );
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(sbarerror);
-                                      } else if (indexakhir["pasal"] ==
-                                          indexmulai["pasal"]) {
-                                        end_ayat.clear();
-                                        end_ayat.addAll(start_ayat);
-                                        init_end_pasal = value.toString();
+                                          init_start_pasal = value.toString();
+                                          init_end_pasal = value.toString();
 
-                                        init_end_ayat = (int.parse(
-                                                    init_start_ayat as String) +
-                                                1)
-                                            .toString();
+                                          init_start_ayat = start_ayat
+                                              .elementAt(0)
+                                              .toString();
+                                          init_end_ayat = start_ayat
+                                              .elementAt(1)
+                                              .toString();
+                                        });
                                       } else {
-                                        end_ayat.clear();
-                                        var tempayat = (_items.where((ayat) =>
-                                            (ayat["pasal"] ==
+                                        setState(() {
+                                          start_ayat.clear();
+
+                                          var tempayat = (_items.where((ayat) =>
+                                              (ayat["pasal"] ==
+                                                      int.parse(
+                                                          value as String) &&
+                                                  ayat["kitab_singkat"] ==
+                                                      init_start_kitab)));
+                                          tempayat.forEach((element) {
+                                            start_ayat.add(
+                                                element["ayat"].toString());
+                                          });
+
+                                          init_start_pasal = value.toString();
+
+                                          init_start_ayat = start_ayat
+                                              .elementAt(0)
+                                              .toString();
+                                        });
+                                      }
+                                    }
+                                  : null),
+                        ),
+                        Container(
+                          child: Text(" : "),
+                          padding: EdgeInsets.only(right: 2),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 5.0),
+                          child: DropdownButton(
+
+                              // ayat
+                              value: devotioncheck ? null : init_start_ayat,
+                              hint: Text(""),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              isDense: true,
+                              items: start_ayat.map((items) {
+                                return DropdownMenuItem(
+                                  value: items,
+                                  child: SizedBox(
+                                      width: 20,
+                                      child: Text(
+                                        items,
+                                        textAlign: TextAlign.center,
+                                      )),
+                                );
+                              }).toList(),
+                              onChanged: customselect
+                                  ? (value) {
+                                      setState(() {
+                                        init_start_ayat = value.toString();
+
+                                        if (init_start_pasal ==
+                                            init_end_pasal) {
+                                          if (value.toString() ==
+                                              start_ayat.last.toString()) {
+                                            if (init_start_pasal ==
+                                                start_pasal.last.toString()) {
+                                              int indexkitab = (kitab.toList())
+                                                  .indexOf(init_start_kitab);
+                                              end_pasal.clear();
+                                              end_ayat.clear();
+                                              var tempasal = (_items.where(
+                                                  (kit) => (kit[
+                                                          "kitab_singkat"] ==
+                                                      kitab.elementAt(
+                                                          indexkitab + 1))));
+                                              init_end_kitab = tempasal
+                                                  .first["kitab_singkat"];
+                                              tempasal.forEach((element) {
+                                                end_pasal.add(element["pasal"]
+                                                    .toString());
+                                              });
+                                              init_end_pasal =
+                                                  end_pasal.first.toString();
+                                              var tempayat = (tempasal.where(
+                                                  (ayat) =>
+                                                      (ayat["pasal"] == 1)));
+                                              tempayat.forEach((element) {
+                                                end_ayat.add(
+                                                    element["ayat"].toString());
+                                              });
+                                              init_end_ayat =
+                                                  end_ayat.first.toString();
+                                            } else {
+                                              init_end_pasal = (int.parse(
+                                                          init_start_pasal
+                                                              as String) +
+                                                      1)
+                                                  .toString();
+
+                                              end_ayat.clear();
+
+                                              var tempayat = (_items.where(
+                                                  (ayat) => (ayat["pasal"] ==
+                                                          int.parse(
+                                                              init_end_pasal
+                                                                  as String) &&
+                                                      ayat["kitab_singkat"] ==
+                                                          init_start_kitab)));
+                                              tempayat.forEach((element) {
+                                                end_ayat.add(
+                                                    element["ayat"].toString());
+                                              });
+                                              init_end_ayat =
+                                                  end_ayat.first.toString();
+                                            }
+                                          } else {
+                                            init_end_ayat =
+                                                (int.parse(value as String) + 1)
+                                                    .toString();
+                                          }
+                                        }
+                                      });
+                                    }
+                                  : null),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(right: 5.0),
+                          child: Text(" - "),
+                        ),
+                        // selesai
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10.0),
+                          child: DropdownButton(
+                              // kitab
+                              value: devotioncheck ? null : init_end_kitab,
+                              hint: Text(""),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              isDense: true,
+                              items: kitab
+                                  .map((items) {
+                                    return DropdownMenuItem(
+                                      value: items,
+                                      child: SizedBox(
+                                          width: 37,
+                                          child: Text(items,
+                                              textAlign: TextAlign.center)),
+                                    );
+                                  })
+                                  .toSet()
+                                  .toList(),
+                              onChanged: customselect
+                                  ? (value) {
+                                      setState(() {
+                                        int indexmulai;
+                                        int indexakhir;
+                                        List tempkitab = kitab.toList();
+                                        indexmulai =
+                                            tempkitab.indexOf(init_start_kitab);
+                                        indexakhir =
+                                            tempkitab.indexOf(value.toString());
+                                        if (indexakhir < indexmulai) {
+                                          final sbarerror = SnackBar(
+                                            content: const Text(
+                                                "Maaf, pilihan alkitab anda tidaklah valid. Mohon memilih kembali"),
+                                            action: SnackBarAction(
+                                              label: 'OK',
+                                              onPressed: () =>
+                                                  ScaffoldMessenger.of(context)
+                                                      .hideCurrentSnackBar(),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(sbarerror);
+                                        } else {
+                                          end_pasal.clear();
+                                          end_ayat.clear();
+
+                                          var temppasal = (_items.where(
+                                              (pasal) =>
+                                                  (pasal["kitab_singkat"] ==
+                                                      value)));
+                                          temppasal.forEach((element) {
+                                            start_pasal.add(
+                                                element["pasal"].toString());
+                                            end_pasal.add(
+                                                element["pasal"].toString());
+                                          });
+                                          var tempayat = (temppasal.where(
+                                              (ayat) => (ayat["pasal"] == 1)));
+                                          tempayat.forEach((element) {
+                                            start_ayat.add(
+                                                element["ayat"].toString());
+                                            end_ayat.add(
+                                                element["ayat"].toString());
+                                          });
+
+                                          init_end_kitab = value.toString();
+                                          init_end_pasal = start_pasal
+                                              .elementAt(0)
+                                              .toString();
+                                          init_end_ayat = start_ayat
+                                              .elementAt(1)
+                                              .toString();
+                                        }
+                                      });
+                                    }
+                                  : null),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 2.0),
+                          child: DropdownButton(
+                              // pasal
+                              value: devotioncheck ? null : init_end_pasal,
+                              hint: Text(""),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              isDense: true,
+                              items: end_pasal.map((items) {
+                                return DropdownMenuItem(
+                                  value: items,
+                                  child: SizedBox(
+                                      width: 20,
+                                      child: Text(
+                                        items,
+                                        textAlign: TextAlign.center,
+                                      )),
+                                );
+                              }).toList(),
+                              onChanged: customselect
+                                  ? (value) {
+                                      setState(() {
+                                        var indexmulai;
+                                        var indexakhir;
+                                        indexmulai = _items.singleWhere(
+                                            (element) =>
+                                                element["pasal"] ==
+                                                    int.parse(init_start_pasal
+                                                        as String) &&
+                                                element["kitab_singkat"] ==
+                                                    init_start_kitab
+                                                        .toString() &&
+                                                element["ayat"] ==
+                                                    int.parse(init_start_ayat
+                                                        as String));
+                                        indexakhir = _items
+                                            .singleWhere((element) =>
+                                                element["pasal"] ==
                                                     int.parse(
                                                         value as String) &&
-                                                ayat["kitab_singkat"] ==
-                                                    init_end_kitab)));
-                                        tempayat.forEach((element) {
-                                          end_ayat
-                                              .add(element["ayat"].toString());
-                                        });
+                                                element["kitab_singkat"] ==
+                                                    init_end_kitab &&
+                                                element["ayat"] ==
+                                                    int.parse(init_end_ayat
+                                                        as String));
 
-                                        init_end_pasal = value.toString();
+                                        if (indexakhir["pasal"] <
+                                            indexmulai["pasal"]) {
+                                          final sbarerror = SnackBar(
+                                            content: const Text(
+                                                "Maaf, pilihan alkitab anda tidaklah valid. Mohon memilih kembali"),
+                                            action: SnackBarAction(
+                                              label: 'OK',
+                                              onPressed: () =>
+                                                  ScaffoldMessenger.of(context)
+                                                      .hideCurrentSnackBar(),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(sbarerror);
+                                        } else if (indexakhir["pasal"] ==
+                                            indexmulai["pasal"]) {
+                                          end_ayat.clear();
+                                          end_ayat.addAll(start_ayat);
+                                          init_end_pasal = value.toString();
 
-                                        init_end_ayat =
-                                            end_ayat.elementAt(0).toString();
-                                      }
-                                    });
-                                  }
-                                : null),
-                      ),
-                      Container(
-                        child: Text(" : "),
-                        padding: EdgeInsets.only(right: 2),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: DropdownButton(
+                                          init_end_ayat = (int.parse(
+                                                      init_start_ayat
+                                                          as String) +
+                                                  1)
+                                              .toString();
+                                        } else {
+                                          end_ayat.clear();
+                                          var tempayat = (_items.where((ayat) =>
+                                              (ayat["pasal"] ==
+                                                      int.parse(
+                                                          value as String) &&
+                                                  ayat["kitab_singkat"] ==
+                                                      init_end_kitab)));
+                                          tempayat.forEach((element) {
+                                            end_ayat.add(
+                                                element["ayat"].toString());
+                                          });
 
-                            // ayat
-                            value: init_end_ayat,
-                            hint: Text(""),
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            iconSize: 0.0,
-                            underline: Container(
-                              height: 1.5,
-                              color: Colors.blueGrey[200],
-                            ),
-                            isDense: true,
-                            items: end_ayat.map((items) {
-                              return DropdownMenuItem(
-                                value: items,
-                                child: SizedBox(
-                                    width: 20,
-                                    child: Text(
-                                      items,
-                                      textAlign: TextAlign.center,
-                                    )),
-                              );
-                            }).toList(),
-                            onChanged: customselect
-                                ? (value) {
-                                    setState(() {
-                                      var indexmulai;
-                                      var indexakhir;
-                                      indexmulai = _items.singleWhere(
-                                          (element) =>
-                                              element["pasal"] ==
-                                                  int.parse(init_start_pasal
-                                                      as String) &&
-                                              element["kitab_singkat"] ==
-                                                  init_start_kitab &&
-                                              element["ayat"] ==
-                                                  int.parse(init_start_ayat
-                                                      as String));
-                                      indexakhir = _items.singleWhere(
-                                          (element) =>
-                                              element["pasal"] ==
-                                                  int.parse(init_end_pasal
-                                                      as String) &&
-                                              element["kitab_singkat"] ==
-                                                  init_end_kitab &&
-                                              element["ayat"] ==
-                                                  int.parse(value as String));
+                                          init_end_pasal = value.toString();
 
-                                      if (indexakhir["id"] < indexmulai["id"]) {
-                                        final sbarerror = SnackBar(
-                                          content: const Text(
-                                              "Sorry, but this chapter is before the chapter you have selected. please select the same or the chapter after your previous selection"),
-                                          action: SnackBarAction(
-                                            label: 'OK',
-                                            onPressed: () =>
-                                                ScaffoldMessenger.of(context)
-                                                    .hideCurrentSnackBar(),
-                                          ),
-                                        );
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(sbarerror);
-                                      } else {
-                                        init_end_ayat = value.toString();
-                                      }
-                                    });
-                                  }
-                                : null),
-                      ),
-                    ],
+                                          init_end_ayat =
+                                              end_ayat.elementAt(0).toString();
+                                        }
+                                      });
+                                    }
+                                  : null),
+                        ),
+                        Container(
+                          child: Text(" : "),
+                          padding: EdgeInsets.only(right: 2),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10.0),
+                          child: DropdownButton(
+
+                              // ayat
+                              value: devotioncheck ? null : init_end_ayat,
+                              hint: Text(""),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              isDense: true,
+                              items: end_ayat.map((items) {
+                                return DropdownMenuItem(
+                                  value: items,
+                                  child: SizedBox(
+                                      width: 20,
+                                      child: Text(
+                                        items,
+                                        textAlign: TextAlign.center,
+                                      )),
+                                );
+                              }).toList(),
+                              onChanged: customselect
+                                  ? (value) {
+                                      setState(() {
+                                        var indexmulai;
+                                        var indexakhir;
+                                        indexmulai = _items.singleWhere(
+                                            (element) =>
+                                                element["pasal"] ==
+                                                    int.parse(
+                                                        init_start_pasal
+                                                            as String) &&
+                                                element["kitab_singkat"] ==
+                                                    init_start_kitab &&
+                                                element["ayat"] ==
+                                                    int.parse(init_start_ayat
+                                                        as String));
+                                        indexakhir = _items.singleWhere(
+                                            (element) =>
+                                                element["pasal"] ==
+                                                    int.parse(init_end_pasal
+                                                        as String) &&
+                                                element["kitab_singkat"] ==
+                                                    init_end_kitab &&
+                                                element["ayat"] ==
+                                                    int.parse(value as String));
+
+                                        if (indexakhir["id"] <
+                                            indexmulai["id"]) {
+                                          final sbarerror = SnackBar(
+                                            content: const Text(
+                                                "Maaf, pilihan alkitab anda tidaklah valid. Mohon memilih kembali"),
+                                            action: SnackBarAction(
+                                              label: 'OK',
+                                              onPressed: () =>
+                                                  ScaffoldMessenger.of(context)
+                                                      .hideCurrentSnackBar(),
+                                            ),
+                                          );
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(sbarerror);
+                                        } else {
+                                          init_end_ayat = value.toString();
+                                        }
+                                      });
+                                    }
+                                  : null),
+                        ),
+                      ],
+                    ),
                   ),
                 ];
               } else {
@@ -1403,14 +1473,16 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                   ),
                 ];
               }
-              return Center(
-                  child: SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: children,
-                ),
-              ));
+              return SingleChildScrollView(
+                child: Center(
+                    child: SizedBox(
+                  height: 1.sh,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: children,
+                  ),
+                )),
+              );
             }));
   }
 }

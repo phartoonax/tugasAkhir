@@ -49,7 +49,9 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainScreen()),
-        );
+        ).then((value) {
+          setState(() {});
+        });
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,7 +59,9 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
           MaterialPageRoute(
               builder: (context) => const LoginPage(title: "Login UI")),
-        );
+        ).then((value) {
+          setState(() {});
+        });
         print("push replaced");
       });
     }
@@ -70,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/play_store_512.png'),
+            image: AssetImage('assets/android/play_store_512.png'),
             fit: BoxFit.cover,
           ),
         ),

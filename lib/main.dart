@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:MannaGo/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'firebase_options.dart';
 import 'color_schemes.g.dart';
 
@@ -9,20 +10,20 @@ void main() {
   runApp(const MyApp());
 }
 
-ColorScheme defaultColorScheme = ColorScheme(
-  primary: Color(0xff16182b),
-  secondary: Color(0xff1D2739),
+// ColorScheme defaultColorScheme = ColorScheme(
+//   primary: Color(0xff16182b),
+//   secondary: Color(0xff1D2739),
 
-  surface: Color(0xff181818),
-  background: Color(0xffF1F3FD),
-  error: Color(0xffCF6679),
-  onPrimary: Color(0xffffffff), //font for button dll
-  onSecondary: Color(0xffF1F3FD),
-  onSurface: Color(0xffebebeb), //border,dll
-  onBackground: Color(0xfff1f1f1), //??
-  onError: Color(0xff000000),
-  brightness: Brightness.light,
-);
+//   surface: Color(0xff181818),
+//   background: Color.fromARGB(255, 23, 31, 70),
+//   error: Color(0xffCF6679),
+//   onPrimary: Color.fromARGB(255, 158, 158, 158), //font for button dll
+//   onSecondary: Color.fromARGB(255, 89, 98, 150),
+//   onSurface: Color.fromARGB(255, 80, 73, 73), //border,dll
+//   onBackground: Color.fromARGB(255, 128, 14, 14), //??
+//   onError: Color(0xff000000),
+//   brightness: Brightness.light,
+// );
 
 class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -59,16 +60,35 @@ class _MyAppState extends State<MyApp> {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    registerForPushNotifications();
+  }
+
+  Future<dynamic> registerForPushNotifications() async {
+    List<String> channels = [];
+    channels.add("default");
+
+    try {
+      return await Backendless.messaging.registerDevice(channels, null);
+    } catch (ex) {
+      return ex;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Manna Go',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
-        darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
-        themeMode: ThemeMode.light,
-        home: const SplashScreen());
+    return ScreenUtilInit(
+        useInheritedMediaQuery: true,
+        builder: (context, child) {
+          return MaterialApp(
+              title: 'Manna Go',
+              debugShowCheckedModeBanner: false,
+              theme:
+                  ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
+              darkTheme:
+                  ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
+              themeMode: ThemeMode.light,
+              home: child);
+        },
+        child: const SplashScreen());
   }
 }
