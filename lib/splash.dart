@@ -44,7 +44,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void nav(bool logs) {
-    if (logs == true) {
+    
+    setState(() {if (logs == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
@@ -59,8 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
               builder: (context) => const LoginPage(title: "Login UI")),
         );
       });
-    }
-    setState(() {});
+    }});
   }
 
   @override

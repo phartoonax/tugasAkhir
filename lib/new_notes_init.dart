@@ -548,6 +548,35 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                       setState(() {
                                         init_start_kitab = "Neh";
                                         customselect = false;
+                                        start_pasal.clear();
+                                        end_pasal.clear();
+                                        start_ayat.clear();
+                                        end_ayat.clear();
+                                        var temppasal = (_items.where((pasal) =>
+                                            (pasal["kitab_singkat"] ==
+                                                init_start_kitab)));
+                                        temppasal.forEach((element) {
+                                          start_pasal
+                                              .add(element["pasal"].toString());
+                                          end_pasal
+                                              .add(element["pasal"].toString());
+                                        });
+                                        var tempayatawal = (temppasal.where(
+                                            (ayat) => (ayat["pasal"] ==
+                                                int.parse(init_start_pasal
+                                                    as String))));
+                                        tempayatawal.forEach((element) {
+                                          start_ayat
+                                              .add(element["ayat"].toString());
+                                        });
+                                        var tempayatakhir = (temppasal.where(
+                                            (ayat) => (ayat["pasal"] ==
+                                                int.parse(init_end_pasal
+                                                    as String))));
+                                        tempayatakhir.forEach((element) {
+                                          end_ayat
+                                              .add(element["ayat"].toString());
+                                        });
 
                                         _reading = value;
                                       });
@@ -630,6 +659,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                 )),
                           ],
                         ),
+<<<<<<< Updated upstream
                       ),
                       // mulai
                       Padding(
@@ -721,6 +751,36 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                             onChanged: customselect
                                 ? (value) {
                                     if (init_start_kitab == init_end_kitab) {
+=======
+                        // mulai
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10.0),
+                          child: DropdownButton(
+                              // kitab
+                              value: devotioncheck ? null : init_start_kitab,
+                              hint: Text(""),
+                              underline: Container(
+                                height: 1.5,
+                                color: Colors.blueGrey[200],
+                              ),
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              iconSize: 0.0,
+                              isDense: true,
+                              items: kitab
+                                  .map((items) {
+                                    return DropdownMenuItem(
+                                      value: items,
+                                      child: SizedBox(
+                                          width: 37,
+                                          child: Text(items,
+                                              textAlign: TextAlign.center)),
+                                    );
+                                  })
+                                  .toSet()
+                                  .toList(),
+                              onChanged: customselect
+                                  ? (value) {
+>>>>>>> Stashed changes
                                       setState(() {
                                         //reset list ayat
                                         start_ayat.clear();

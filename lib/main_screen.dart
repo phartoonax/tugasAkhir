@@ -72,6 +72,80 @@ class _MainScreenState extends State<MainScreen> {
       print("From loadnotes | logindata = " + parsedat.toString());
       if (parsedat["leader_student"].toString() != "[]") {
         leadstatus = true;
+<<<<<<< Updated upstream
+=======
+        (parsedat["leader_student"] as List).forEach((element) {
+          BackendlessUser tempuser = element;
+          Map touser = {
+            "nama": tempuser.getProperty("name").toString(),
+            "id": tempuser.getProperty("objectId").toString(),
+          };
+          DataQueryBuilder tempquerry = DataQueryBuilder()
+            ..whereClause =
+                "ownerId = '${element.getProperty("objectId").toString()}'"
+            ..sortBy = ["created"];
+          //manageing absen
+          List<Map> tempabsen = List.empty(growable: true);
+
+          Backendless.data.of('Absensi').find(tempquerry).then((value) {
+            tempabsen.addAll(value!.cast<Map>());
+            //14 days checker
+            var dates = (DateTime.now().subtract(Duration(days: 13)));
+            List<bool> absenmurid = List.empty(growable: true);
+            int indexdb = 0;
+            for (int i = 0; i < 14; i++) {
+              if (tempabsen.isNotEmpty && tempabsen.length > indexdb) {
+                if ((tempabsen[indexdb]['created'] as DateTime).day ==
+                    dates.add(Duration(days: i)).day) {
+                  indexdb++;
+                  absenmurid.add(true);
+                } else {
+                  absenmurid.add(false);
+                }
+              } else {
+                absenmurid.add(false);
+              }
+            }
+            setState(() {
+              touser["absen"] = absenmurid;
+            });
+          });
+
+          //searching catatan murid
+          tempquerry.whereClause =
+              "ownerId = '${element.getProperty("objectId").toString()}' && sharestatus=true";
+          tempquerry.related = ['rekomendasi_renungan'];
+          tempquerry.relationsDepth = 1;
+
+          Backendless.data.of('Catatan_Sate').find(tempquerry).then((value) {
+            if (value!.isEmpty == true) {
+              print("TEST IS TRUE");
+              touser["notes"] = List<Map>.empty();
+            } else {
+              List<Map> notesmurid = List.empty(growable: true);
+              value.forEach(
+                (element) {
+                  notesmurid.add(element!);
+                },
+              );
+              setState(() {
+                touser["notes"] = notesmurid;
+                print(value);
+              });
+            }
+          }).catchError((onError, stackTrace) {
+            print("There has been an error inside: $onError");
+            PlatformException platformException = onError;
+            print("Server reported an error inside.");
+            print("Exception code: ${platformException.code}");
+            print("Exception details: ${platformException.details}");
+            print("Stacktrace: $stackTrace");
+          }, test: (e) => e is PlatformException);
+          listmurid.add(touser);
+        }); //end foreach
+
+        print("list Murid|" + listmurid.toString());
+>>>>>>> Stashed changes
       }
       DataQueryBuilder searchnotes = DataQueryBuilder()
         ..whereClause = "ownerId = '$currentUserObjectId'"
@@ -313,6 +387,7 @@ class _ContentMainState extends State<ContentMain> {
                             ),
                           ),
                   ),
+<<<<<<< Updated upstream
                 ],
               ),
             ),
@@ -337,6 +412,79 @@ class _ContentMainState extends State<ContentMain> {
                               fontFamily: 'Roboto',
                               fontSize: 19,
                             ),
+=======
+                ),
+                Container(
+                  //box for 2 box
+                  height: 110.h,
+                  margin: EdgeInsets.only(top: 10, left: 5, right: 5),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        height: 140,
+                        width: 180,
+                        child: IconButton(
+                          padding: EdgeInsets.all(0),
+                          onPressed: () {
+                            confirmabsen.clear();
+                            bool checkabsen = false;
+                            int indexfordb = 0;
+
+                            for (int i = 0; i <= 6; i++) {
+                              if ((DateTime.now().subtract(Duration(days: i)))
+                                      .weekday ==
+                                  DateTime.monday) {
+                                dates = (DateTime.now().subtract(
+                                    Duration(days: i))); //searching for monday
+                              }
+                            }
+                            int intforcheckindex = widget.absen!.isNotEmpty
+                                ? (widget.absen!.last['created'] as DateTime)
+                                        .weekday -
+                                    dates.weekday +
+                                    1
+                                : 1;
+                            for (int i = 0; i < intforcheckindex; i++) {
+                              if (widget.absen!.isNotEmpty) {
+                                if ((dates.add(Duration(days: i))).day ==
+                                    (widget.absen![indexfordb]['created']
+                                            as DateTime)
+                                        .day) {
+                                  indexfordb++;
+                                  confirmabsen.add(true);
+                                } else {
+                                  confirmabsen.add(false);
+                                }
+                              } else {
+                                confirmabsen.add(false);
+                              }
+                            }
+                            int leng = confirmabsen.length;
+                            for (int j = 1; j <= 7 - leng; j++) {
+                              confirmabsen.add(false);
+                            }
+                            if (widget.absen!.isNotEmpty) {
+                              if ((widget.absen!.last['created'] as DateTime)
+                                      .day ==
+                                  DateTime.now().day) {
+                                checkabsen = true;
+                              }
+                            }
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) => CustomDialog(
+                                      name: widget.name,
+                                      checkined: checkabsen,
+                                      numberofcheckinweek: widget.absen!.length,
+                                      listnote: listnotes,
+                                      absen: confirmabsen,
+                                    ));
+                          },
+                          icon: Image.asset(
+                            'assets/Checkin.png',
+                            fit: BoxFit.fill,
+>>>>>>> Stashed changes
                           ),
                         ),
                         Spacer(),
