@@ -354,6 +354,16 @@ class _NotesScreenState extends State<NotesScreen> {
                               }
                               return Card(
                                 child: ExpansionTile(
+                                  backgroundColor: isalkitab
+                                      ? Theme.of(context).colorScheme.surface
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .tertiaryContainer,
+                                  collapsedBackgroundColor: isalkitab
+                                      ? Theme.of(context).colorScheme.surface
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .tertiaryContainer,
                                   leading: Icon(Icons.description),
                                   title: Text(widget.listmurid?[index]['notes']
                                       [indx]['judul_catatan']),
@@ -367,7 +377,7 @@ class _NotesScreenState extends State<NotesScreen> {
                                               1)
                                       : Text(widget.listmurid?[index]['notes']
                                                   [indx]['rekomendasi_renungan']
-                                              ["judul_renungan"] +
+                                              ['judul_renungan'] +
                                           "|" +
                                           widget.listmurid?[index]['notes']
                                                   [indx]["rekomendasi_renungan"]
@@ -375,6 +385,15 @@ class _NotesScreenState extends State<NotesScreen> {
                                   children: [
                                     Card(
                                       child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isalkitab
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .surface
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .tertiaryContainer,
+                                        ),
                                         child: Text(widget.listmurid?[index]
                                             ['notes'][indx]["catatan"]),
                                       ),

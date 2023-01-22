@@ -86,7 +86,12 @@ class _MainScreenState extends State<MainScreen> {
       Backendless.data
           .of("Reminder")
           .find(DataQueryBuilder()..whereClause = "ownerId='$ids'")
-          .then((value) => useralarm = value!.first);
+          .then((value) {
+        if (value != null && value.isNotEmpty) {
+          useralarm = value[0];
+          checkeralarm = true;
+        }
+      });
       if (parsedat["leader_student"].toString() != "[]") {
         leadstatus = true;
         (parsedat["leader_student"] as List).forEach((element) {
@@ -129,6 +134,8 @@ class _MainScreenState extends State<MainScreen> {
           //searching catatan murid
           tempquerry.whereClause =
               "ownerId = '${element.getProperty("objectId").toString()}' && sharestatus=true";
+          tempquerry.related = ['rekomendasi_renungan'];
+          tempquerry.relationsDepth = 1;
 
           Backendless.data.of('Catatan_Sate').find(tempquerry).then((value) {
             if (value!.isEmpty == true) {
@@ -380,6 +387,7 @@ class _MainScreenState extends State<MainScreen> {
                           : NewNotesinitPage(
                               leaderstatus: isleaded,
                               isnewabsen: true,
+                              lastreading: listnote.first,
                             )),
                 ).then((value) {
                   loadnotes();
@@ -726,12 +734,23 @@ class _ContentMainState extends State<ContentMain> {
                             }
                             showDialog(
                                 context: context,
-                                builder: (BuildContext context) => CustomDialog(
-                                      name: widget.name,
-                                      checkined: checkabsen,
-                                      numberofcheckinweek: widget.absen!.length,
-                                      absen: confirmabsen,
-                                    ));
+                                builder: (BuildContext context) =>
+                                    (listnote.isEmpty)
+                                        ? CustomDialog(
+                                            name: namas,
+                                            checkined: false,
+                                            numberofcheckinweek:
+                                                widget.absen!.length,
+                                            absen: confirmabsen,
+                                          )
+                                        : CustomDialog(
+                                            name: namas,
+                                            checkined: false,
+                                            numberofcheckinweek:
+                                                widget.absen!.length,
+                                            absen: confirmabsen,
+                                            listnote: listnote,
+                                          ));
                           },
                           icon: Image.asset(
                             'assets/Checkin.png',
@@ -1265,8 +1284,8 @@ class _CustomDialogState extends State<CustomDialog> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => (widget
-                                          .listnote!.isNotEmpty)
+                                  builder: (context) => (widget.listnote !=
+                                          null)
                                       ? NewNotesinitPage(
                                           isnewabsen: true,
                                           leaderstatus: isleaded,

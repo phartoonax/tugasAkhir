@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:backendless_sdk/backendless_sdk.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -18,10 +20,12 @@ class AlarmScreen extends StatefulWidget {
   State<AlarmScreen> createState() => _AlarmScreenState();
 }
 
+bool statusaktif = false;
+bool statusrepeat = false;
+
 class _AlarmScreenState extends State<AlarmScreen> {
   late DateTime datepicker;
-  bool statusaktif = false;
-  bool statusrepeat = false;
+
   Map datareminder = {};
   @override
   void initState() {
@@ -30,7 +34,18 @@ class _AlarmScreenState extends State<AlarmScreen> {
     if (widget.dataalarm != null) {
       if (widget.dataalarm!.isNotEmpty) {
         datepicker = widget.dataalarm!["remind_time"];
+
         datareminder = widget.dataalarm!;
+        if ((datareminder["remind_time"] as DateTime)
+            .isBefore(DateTime.now())) {
+          statusaktif = datareminder['status'];
+        } else {
+          statusaktif = false;
+        }
+
+        statusrepeat = datareminder['repeat'];
+
+        log(datareminder.toString());
       }
     } else {
       datepicker = DateTime.now();
@@ -63,18 +78,27 @@ class _AlarmScreenState extends State<AlarmScreen> {
                       devid = deviceRegistration!.deviceId!;
                     });
                     print("date: " + datepicker.toString());
-
+                    SnackBar sbarnoticesavereminder;
                     if (datareminder.isEmpty) {
                       datareminder = {
                         "remind_time": datepicker,
                         "status": statusaktif,
                         "repeat": statusrepeat
                       };
-                    } else {}
+                    } else {
+                      datareminder = {
+                        "remind_time": datepicker,
+                        "status": statusaktif,
+                        "repeat": statusrepeat
+                      };
+                    }
                     Backendless.data
                         .of("Reminder")
                         .save(datareminder)
                         .then((value) {
+                      datareminder.clear();
+                      datareminder = value!;
+
                       if (statusaktif = true) {
                         print("data initial|" + value.toString());
                         DeliveryOptions deliveryOptions = DeliveryOptions()
@@ -101,9 +125,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
                           print("Message status: $status");
                         });
                       } else {
-                        //do nothing else
+                        //do nothing else, data is posted
                       }
-                      final sbarnoticesavereminder = SnackBar(
+                      sbarnoticesavereminder = SnackBar(
                         duration: Duration(seconds: 4),
                         content: const Text("Pengingat anda telah tersimpan"),
                         action: SnackBarAction(
@@ -115,6 +139,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                       ScaffoldMessenger.of(context)
                           .showSnackBar(sbarnoticesavereminder);
                     });
+
                     setState(() {});
                   },
                   child: Text(

@@ -61,14 +61,16 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
   int lastreadingindex = 0;
   initState() {
     super.initState();
-    init();
     var now = new DateTime.now();
     var formatter = new DateFormat('dd-MMM-yy');
     formattedDate = formatter.format(now);
+    init();
+
     readJson();
   }
 
   void init() async {
+    _guide!.clear();
     DataQueryBuilder cond = DataQueryBuilder()
       ..relationsDepth = 1
       ..related = ["rekomendasi_genre"];
@@ -84,7 +86,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
       _guidesong!.clear();
       _guidesong = value?.cast<Map>();
     });
-    DataQueryBuilder querry = DataQueryBuilder()..pageSize = 100;
+    DataQueryBuilder querry = DataQueryBuilder()
+      ..pageSize = 100
+      ..whereClause =
+          "date_intended at or after '${DateFormat('dd-MMM-yyyy').format((DateTime.now().subtract(Duration(days: 1))))}'";
 
     Backendless.data.of('devotion_guide').find(querry).then((value) {
       _guide = value?.cast<Map>();
@@ -233,6 +238,51 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
     '4',
     '5',
   };
+
+  void changeradio(String jenis) {
+    start_pasal.clear();
+    end_pasal.clear();
+    start_ayat.clear();
+    end_ayat.clear();
+    Map pilihan =
+        _guide!.where((element) => element['penerbit'] == jenis).first;
+    setState(() {
+      init_start_kitab = _items[pilihan['idstartkitab']]['kitab_singkat'];
+      init_end_kitab = _items[pilihan['idendkitab']]['kitab_singkat'];
+    });
+
+    var temppasalstart =
+        (_items.where((pasal) => (pasal["kitab_singkat"] == init_start_kitab)));
+    temppasalstart.forEach((element) {
+      start_pasal.add(element["pasal"].toString());
+    });
+
+    var temppasalend =
+        (_items.where((pasal) => (pasal["kitab_singkat"] == init_end_kitab)));
+    temppasalend.forEach((element) {
+      end_pasal.add(element["pasal"].toString());
+    });
+    setState(() {
+      init_start_pasal = _items[pilihan['idstartkitab']]['pasal'].toString();
+      init_end_pasal = _items[pilihan['idendkitab']]['pasal'].toString();
+    });
+
+    var tempayatawal = (temppasalstart
+        .where((ayat) => (ayat["pasal"] == int.parse(init_start_pasal!))));
+    tempayatawal.forEach((element) {
+      start_ayat.add(element["ayat"].toString());
+    });
+
+    var tempayatakhir = (temppasalstart
+        .where((ayat) => (ayat["pasal"] == int.parse(init_end_pasal!))));
+    tempayatakhir.forEach((element) {
+      end_ayat.add(element["ayat"].toString());
+    });
+    setState(() {
+      init_start_ayat = _items[pilihan['idstartkitab']]['ayat'].toString();
+      init_end_ayat = _items[pilihan['idendkitab']]['ayat'].toString();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -395,7 +445,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                   ),
                   Stack(alignment: AlignmentDirectional.center, children: [
                     Container(
-                      height: 470 + 36,
+                      height: 470 + 206 - 170,
                       padding: EdgeInsets.only(
                         left: 10,
                         right: 10,
@@ -474,6 +524,138 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                               });
                             },
                           ),
+                          // Container(
+                          //   margin: EdgeInsets.only(bottom: 10),
+                          //   //the fuscia box
+                          //   height: 160,
+                          //   decoration: BoxDecoration(
+                          //       color: Color.fromARGB(255, 206, 145, 75),
+                          //       border: Border.all(
+                          //           color: Color.fromARGB(255, 206, 145, 75)),
+                          //       borderRadius:
+                          //           BorderRadius.all(Radius.circular(10)),
+                          //       boxShadow: [
+                          //         BoxShadow(
+                          //           color: Color.fromARGB(97, 0, 0, 0),
+                          //           spreadRadius: 0.5,
+                          //           blurRadius: 5,
+                          //           offset: Offset(0, 5),
+                          //         )
+                          //       ]),
+                          //   child: (!devotioncheck)
+                          //       ? Column(
+                          //           children: [
+                          //             Container(
+                          //                 height: 135,
+                          //                 child: Container(
+                          //                   width: MediaQuery.of(context)
+                          //                           .size
+                          //                           .width -
+                          //                       20 -
+                          //                       62,
+                          //                   margin: EdgeInsets.symmetric(
+                          //                       horizontal: 5),
+                          //                   decoration: BoxDecoration(
+                          //                     color: Color.fromARGB(
+                          //                         255, 206, 145, 75),
+                          //                   ),
+                          //                   child: Container(
+                          //                     child: Center(
+                          //                       child: Column(
+                          //                         children: [
+                          //                           Row(
+                          //                             children: [
+                          //                               Container(
+                          //                                 color: Color.fromARGB(
+                          //                                     255,
+                          //                                     75,
+                          //                                     206,
+                          //                                     206),
+                          //                                 width: 25,
+                          //                               ),
+                          //                               Spacer(),
+                          //                               Container(
+                          //                                 margin: EdgeInsets
+                          //                                     .symmetric(
+                          //                                         vertical: 5),
+                          //                                 height: 75,
+                          //                                 width: 75,
+                          //                                 child: Icon(
+                          //                                   Icons
+                          //                                       .local_library_rounded,
+                          //                                   size: 50,
+                          //                                   color: Colors.white,
+                          //                                 ),
+                          //                                 decoration: BoxDecoration(
+                          //                                     shape: BoxShape
+                          //                                         .circle,
+                          //                                     color: (Colors
+                          //                                             .grey)
+                          //                                         .withOpacity(
+                          //                                             0.8)),
+                          //                               ),
+                          //                               Spacer(),
+                          //                               Container(
+                          //                                 color: Color.fromARGB(
+                          //                                     255,
+                          //                                     75,
+                          //                                     206,
+                          //                                     108),
+                          //                                 width: 25,
+                          //                               ),
+                          //                             ],
+                          //                           ),
+                          //                           Text(
+                          //                             "test",
+                          //                             style: TextStyle(
+                          //                                 fontSize: 18.0,
+                          //                                 fontWeight:
+                          //                                     FontWeight.bold),
+                          //                           ),
+                          //                           Text("testi" +
+                          //                               "|" +
+                          //                               "Testing")
+                          //                         ],
+                          //                       ),
+                          //                     ),
+                          //                   ),
+                          //                 )),
+                          //             Row(
+                          //               mainAxisAlignment:
+                          //                   MainAxisAlignment.center,
+                          //               children: guidefiltereddev
+                          //                   .asMap()
+                          //                   .entries
+                          //                   .map((entry) {
+                          //                 return GestureDetector(
+                          //                   onTap: () => _controllerDev
+                          //                       .animateToPage(entry.key),
+                          //                   child: Container(
+                          //                     width: 8.0,
+                          //                     height: 7.0,
+                          //                     margin: EdgeInsets.symmetric(
+                          //                         vertical: 8.0,
+                          //                         horizontal: 4.0),
+                          //                     decoration: BoxDecoration(
+                          //                         shape: BoxShape.circle,
+                          //                         color: (Theme.of(context)
+                          //                                         .brightness ==
+                          //                                     Brightness.dark
+                          //                                 ? Colors.white
+                          //                                 : Colors.black)
+                          //                             .withOpacity(
+                          //                                 _currentDev ==
+                          //                                         entry.key
+                          //                                     ? 0.9
+                          //                                     : 0.4)),
+                          //                   ),
+                          //                 );
+                          //               }).toList(),
+                          //             ),
+                          //           ],
+                          //         )
+                          //       : Container(),
+                          // ),
                           Container(
                             margin: EdgeInsets.all(0),
                             //the fuscia box
@@ -748,7 +930,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                     Container(
                       //cover
 
-                      height: recomendationcheck ? 0 : 470 + 36,
+                      height: recomendationcheck ? 0 : 470 + 206 - 170,
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
                         border: Border.all(
@@ -792,37 +974,9 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     value: Readingmode.sabda,
                                     groupValue: _reading,
                                     onChanged: (value) {
-                                      start_pasal.clear();
-                                      end_pasal.clear();
-                                      start_ayat.clear();
-                                      end_ayat.clear();
-                                      var temppasal = (_items.where((pasal) =>
-                                          (pasal["kitab_singkat"] == value)));
-                                      temppasal.forEach((element) {
-                                        start_pasal
-                                            .add(element["pasal"].toString());
-                                        end_pasal
-                                            .add(element["pasal"].toString());
-                                      });
-                                      var tempayatawal = (temppasal.where(
-                                          (ayat) => (ayat["pasal"] == 1)));
-                                      tempayatawal.forEach((element) {
-                                        start_ayat
-                                            .add(element["ayat"].toString());
-                                        end_ayat
-                                            .add(element["ayat"].toString());
-                                      });
+                                      changeradio("SABDA");
 
-                                      init_start_kitab = value.toString();
-                                      init_start_pasal =
-                                          start_pasal.elementAt(0).toString();
-                                      init_start_ayat =
-                                          start_ayat.elementAt(0).toString();
-                                      init_end_kitab = value.toString();
-                                      init_end_pasal =
-                                          start_pasal.elementAt(0).toString();
-                                      init_end_ayat =
-                                          start_ayat.elementAt(1).toString();
+                                      customselect = false;
 
                                       _reading = value;
                                     },
@@ -842,6 +996,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     // dense: true,
                                     visualDensity: VisualDensity.compact,
                                     onChanged: (value) {
+                                      changeradio("Biblestudytools");
+
+                                      customselect = false;
+
                                       _reading = value;
                                     },
                                   ),
@@ -860,12 +1018,8 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     visualDensity: VisualDensity.compact,
                                     onChanged: (value) {
                                       setState(() {
-                                        init_start_kitab = "Est";
-                                        init_start_pasal = "3";
-                                        init_start_ayat = "1";
-                                        init_end_kitab = "Est";
-                                        init_end_pasal = "4";
-                                        init_end_ayat = "17";
+                                        changeradio("GMS");
+
                                         customselect = false;
 
                                         _reading = value;
@@ -909,8 +1063,10 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                                     visualDensity: VisualDensity.compact,
                                     groupValue: _reading,
                                     onChanged: (value) {
-                                      customselect = true;
-                                      _reading = value;
+                                      setState(() {
+                                        customselect = true;
+                                        _reading = value;
+                                      });
                                     },
                                   ),
                                 )
@@ -955,8 +1111,7 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                         // mulai
                         Padding(
                           padding: const EdgeInsets.only(right: 10.0),
-                          child: 
-                          DropdownButton(
+                          child: DropdownButton(
                               // kitab
                               value: devotioncheck ? null : init_start_kitab,
                               hint: Text(""),
@@ -1474,13 +1629,12 @@ class _NewNotesinitPageState extends State<NewNotesinitPage> {
                 ];
               }
               return SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                physics: const BouncingScrollPhysics(),
                 child: Center(
-                    child: SizedBox(
-                  height: 1.sh,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: children,
-                  ),
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: children,
                 )),
               );
             }));
