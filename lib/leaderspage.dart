@@ -556,7 +556,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         shrinkWrap: true,
                         itemBuilder: ((contxt, indx) {
                           var dates = formatDate(
-                              DateTime.now().subtract(Duration(days: indx)),
+                              (DateTime.now().subtract(Duration(days: 24)))
+                                  .add(Duration(days: indx)),
                               [dd, ' ', M, ' ', yyyy]);
                           return Container(
                             alignment: Alignment.topLeft,

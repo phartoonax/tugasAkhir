@@ -102,7 +102,10 @@ class _MainScreenState extends State<MainScreen> {
           };
           DataQueryBuilder tempquerry = DataQueryBuilder()
             ..whereClause =
-                "ownerId = '${element.getProperty("objectId").toString()}'"
+                "ownerId = '${element.getProperty("objectId").toString()}' && created at or after '" +
+                    DateFormat('MM-DD-y')
+                        .format(DateTime.now().subtract(Duration(days: 24))) +
+                    "'"
             ..sortBy = ["created"];
           //manageing absen
           List<Map> tempabsen = List.empty(growable: true);
@@ -110,10 +113,10 @@ class _MainScreenState extends State<MainScreen> {
           Backendless.data.of('Absensi').find(tempquerry).then((value) {
             tempabsen.addAll(value!.cast<Map>());
             //14 days checker
-            var dates = (DateTime.now().subtract(Duration(days: 13)));
+            var dates = (DateTime.now().subtract(Duration(days: 24)));
             List<bool> absenmurid = List.empty(growable: true);
             int indexdb = 0;
-            for (int i = 0; i < 14; i++) {
+            for (int i = 0; i < 25; i++) {
               if (tempabsen.isNotEmpty && tempabsen.length > indexdb) {
                 if ((tempabsen[indexdb]['created'] as DateTime).day ==
                     dates.add(Duration(days: i)).day) {
