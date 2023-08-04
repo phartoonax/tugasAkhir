@@ -1,6 +1,7 @@
 # tugasAkhir by Henry A.D
 
 This is the MannaGo app. MannaGo is a personal devotion app that is made to help Christians in doing their daily personal devotions. Some of the features that's included in the app is :
+
 • Build in Bible reader
 • Notes feature for each Devotions
 • Recommendations for songs and reading materials
